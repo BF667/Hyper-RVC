@@ -2,7 +2,7 @@
 
 # Hyper RVC WebUI
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BF667-IDLE/Hyper-RVC/blob/main/assets/colab.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BF667/Hyper-RVC/blob/main/assets/colab.ipynb)
 
 An autonomous pipeline to create covers with any RVC v2 trained AI voice from YouTube videos or a local audio file, plus **ACE-Step 1.5** text-to-music generation built right in. For developers who may want to add a singing functionality into their AI assistant/chatbot/vtuber, for people who want to hear their favourite characters sing their favourite song, or for anyone who wants to generate original music from text prompts.
 
@@ -127,7 +127,7 @@ The `full_inference_program()` function coordinates the complete audio processin
 |:---:|:---:|:---|
 | 👑 Base Project Owner | [ShiromiyaG](https://github.com/ShiromiyaG) | Owner of [RVC-AI-Cover-Maker-UI](https://github.com/Eddycrack864/RVC-AI-Cover-Maker-UI) which this project is based on |
 | 🔧 Base Project Contributor | [Eddycrack864](https://github.com/Eddycrack864) | Contributor to [RVC-AI-Cover-Maker-UI](https://github.com/Eddycrack864/RVC-AI-Cover-Maker-UI) |
-| 🧩 Fork Owner | [BF667-IDLE](https://github.com/BF667-IDLE) | Hyper RVC fork owner & maintainer |
+| 🧩 Fork Owner | [BF667](https://github.com/BF667) | Hyper RVC fork owner & maintainer |
 | 🧪 Colab UI | [Nick088](https://linktr.ee/Nick088) | Start UI cells in Colab & Kaggle, local setup guide |
 | 🧪 QA Testing | [FullmatheusBallZ](https://www.youtube.com/@FullmatheusBallZ) | Google Colab testing & quality assurance |
 
