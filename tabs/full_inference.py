@@ -1,4 +1,4 @@
-from core import full_inference_program
+from main.core import full_inference_program
 import sys, os
 import gradio as gr
 import regex as re
@@ -12,6 +12,8 @@ i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from main.tools.variables import get_f0_methods_ui
+
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "audio_files", "original_files")
 
@@ -19,19 +21,8 @@ model_root_relative = os.path.relpath(model_root, now_dir)
 audio_root_relative = os.path.relpath(audio_root, now_dir)
 
 sup_audioext = {
-    "wav",
-    "mp3",
-    "flac",
-    "ogg",
-    "opus",
-    "m4a",
-    "mp4",
-    "aac",
-    "alac",
-    "wma",
-    "aiff",
-    "webm",
-    "ac3",
+    "wav", "mp3", "flac", "ogg", "opus", "m4a", "mp4", "aac",
+    "alac", "wma", "aiff", "webm", "ac3"
 }
 
 names = [
@@ -84,7 +75,7 @@ dereverb_models_names = [
     "BS-Roformer Dereverb by anvuew",
 ]
 
-deeecho_models_names = ["UVR-Deecho-Normal", "UVR-Deecho-Aggressive"]
+deecho_models_names = ["UVR-Deecho-Normal", "UVR-Deecho-Aggressive"]
 
 
 def get_indexes():
@@ -94,7 +85,6 @@ def get_indexes():
         for filename in filenames
         if filename.endswith(".index") and "trained" not in filename
     ]
-
     return indexes_list if indexes_list else ""
 
 
@@ -116,9 +106,7 @@ def match_index(model_file_value):
 
 
 def output_path_fn(input_audio_path):
-    original_name_without_extension = os.path.basename(input_audio_path).rsplit(".", 1)[
-        0
-    ]
+    original_name_without_extension = os.path.basename(input_audio_path).rsplit(".", 1)[0]
     new_name = original_name_without_extension + "_output.wav"
     output_path = os.path.join(os.path.dirname(input_audio_path), new_name)
     return output_path
@@ -208,585 +196,348 @@ def change_choices():
 
 def full_inference_tab():
     default_weight = names[0] if names else None
+
+    # -- Voice Model --
     with gr.Row():
-        with gr.Row():
-            model_file = gr.Dropdown(
-                label=i18n("Voice Model"),
-                info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(names, key=lambda path: os.path.getsize(path)),
-                interactive=True,
-                value=default_weight,
-                allow_custom_value=True,
-            )
+        model_file = gr.Dropdown(
+            label=i18n("Voice Model"),
+            info=i18n("Select the voice model (.pth / .onnx)."),
+            choices=sorted(names, key=lambda path: os.path.getsize(path)),
+            interactive=True,
+            value=default_weight,
+            allow_custom_value=True,
+        )
+        index_file = gr.Dropdown(
+            label=i18n("Index File"),
+            info=i18n("Select the index file (.index)."),
+            choices=get_indexes(),
+            value=match_index(default_weight) if default_weight else "",
+            interactive=True,
+            allow_custom_value=True,
+        )
 
-            index_file = gr.Dropdown(
-                label=i18n("Index File"),
-                info=i18n("Select the index file to use for the conversion."),
-                choices=get_indexes(),
-                value=match_index(default_weight) if default_weight else "",
-                interactive=True,
-                allow_custom_value=True,
-            )
-        with gr.Column():
-            refresh_button = gr.Button(i18n("Refresh"))
-            unload_button = gr.Button(i18n("Unload Voice"))
+    model_file.select(
+        fn=lambda model_file_value: match_index(model_file_value),
+        inputs=[model_file],
+        outputs=[index_file],
+    )
 
-            unload_button.click(
-                fn=lambda: (
-                    {"value": "", "__type__": "update"},
-                    {"value": "", "__type__": "update"},
-                ),
-                inputs=[],
-                outputs=[model_file, index_file],
-            )
-            model_file.select(
-                fn=lambda model_file_value: match_index(model_file_value),
-                inputs=[model_file],
-                outputs=[index_file],
-            )
-    with gr.Tab(i18n("Single")):
-        with gr.Column():
-            upload_audio = gr.Audio(
-                label=i18n("Upload Audio"),
-                type="filepath",
-                editable=False,
-                sources="upload",
-            )
+    # -- Audio Input --
+    upload_audio = gr.Audio(
+        label=i18n("Upload Audio"),
+        type="filepath",
+        editable=False,
+        sources="upload",
+    )
+    audio = gr.Dropdown(
+        label=i18n("Select Audio"),
+        info=i18n("Pick from existing files."),
+        choices=sorted(audio_paths),
+        value=audio_paths[0] if audio_paths else "",
+        interactive=True,
+        allow_custom_value=True,
+    )
+
+    # -- Output --
+    vc_output1 = gr.Textbox(
+        label=i18n("Output Status"),
+        interactive=False,
+        lines=2,
+    )
+    vc_output2 = gr.Audio(
+        label=i18n("Result"),
+        type="numpy",
+    )
+
+    # Hidden output path
+    output_path = gr.Textbox(visible=False)
+
+    # -- Advanced Settings --
+    with gr.Accordion(i18n("Advanced Settings"), open=False):
+
+        # RVC Settings
+        with gr.Accordion(i18n("RVC Settings"), open=False):
             with gr.Row():
-                audio = gr.Dropdown(
-                    label=i18n("Select Audio"),
-                    info=i18n("Select the audio to convert."),
-                    choices=sorted(audio_paths),
-                    value=audio_paths[0] if audio_paths else "",
-                    interactive=True,
-                    allow_custom_value=True,
-                )
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
-            with gr.Accordion(i18n("RVC Settings"), open=False):
-                output_path = gr.Textbox(
-                    label=i18n("Output Path"),
-                    placeholder=i18n("Enter output path"),
-                    info=i18n(
-                        "The path where the output audio will be saved, by default in audio_files/rvc/output.wav"
-                    ),
-                    value=os.path.join(now_dir, "audio_files", "rvc"),
-                    interactive=False,
-                    visible=False,
-                )
-                infer_backing_vocals = gr.Checkbox(
-                    label=i18n("Infer Backing Vocals"),
-                    info=i18n("Infer the bakcing vocals too."),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                with gr.Row():
-                    infer_backing_vocals_model = gr.Dropdown(
-                        label=i18n("Backing Vocals Model"),
-                        info=i18n(
-                            "Select the backing vocals model to use for the conversion."
-                        ),
-                        choices=sorted(names, key=lambda path: os.path.getsize(path)),
-                        interactive=True,
-                        value=default_weight,
-                        visible=False,
-                        allow_custom_value=False,
-                    )
-                    infer_backing_vocals_index = gr.Dropdown(
-                        label=i18n("Backing Vocals Index File"),
-                        info=i18n(
-                            "Select the backing vocals index file to use for the conversion."
-                        ),
-                        choices=get_indexes(),
-                        value=match_index(default_weight) if default_weight else "",
-                        interactive=True,
-                        visible=False,
-                        allow_custom_value=True,
-                    )
-                    with gr.Column():
-                        refresh_button_infer_backing_vocals = gr.Button(
-                            i18n("Refresh"),
-                            visible=False,
-                        )
-                        unload_button_infer_backing_vocals = gr.Button(
-                            i18n("Unload Voice"),
-                            visible=False,
-                        )
-
-                        unload_button_infer_backing_vocals.click(
-                            fn=lambda: (
-                                {"value": "", "__type__": "update"},
-                                {"value": "", "__type__": "update"},
-                            ),
-                            inputs=[],
-                            outputs=[
-                                infer_backing_vocals_model,
-                                infer_backing_vocals_index,
-                            ],
-                        )
-                        infer_backing_vocals_model.select(
-                            fn=lambda model_file_value: match_index(model_file_value),
-                            inputs=[infer_backing_vocals_model],
-                            outputs=[infer_backing_vocals_index],
-                        )
-                with gr.Accordion(
-                    i18n("RVC Settings for Backing vocals"), open=False, visible=False
-                ) as back_rvc_settings:
-                    export_format_rvc_back = gr.Radio(
+                with gr.Column():
+                    export_format_rvc = gr.Radio(
                         label=i18n("Export Format"),
-                        info=i18n("Select the format to export the audio."),
                         choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                         value="FLAC",
                         interactive=True,
-                        visible=False,
                     )
-                    split_audio_back = gr.Checkbox(
-                        label=i18n("Split Audio"),
-                        info=i18n(
-                            "Split the audio into chunks for inference to obtain better results in some cases."
-                        ),
-                        visible=True,
-                        value=False,
+                    pitch = gr.Slider(
+                        label=i18n("Pitch"),
+                        info=i18n("Adjust pitch (semitones)."),
+                        minimum=-12, maximum=12, step=1, value=0,
                         interactive=True,
                     )
-                    pitch_extract_back = gr.Radio(
+                    filter_radius = gr.Slider(
+                        minimum=0, maximum=7,
+                        label=i18n("Filter Radius"),
+                        info=i18n("Median filtering on tone results."),
+                        value=3, step=1, interactive=True,
+                    )
+                    split_audio = gr.Checkbox(
+                        label=i18n("Split Audio"),
+                        value=False, interactive=True,
+                    )
+                    autotune = gr.Checkbox(
+                        label=i18n("Autotune"),
+                        value=False, interactive=True,
+                    )
+
+                with gr.Column():
+                    pitch_extract = gr.Radio(
                         label=i18n("Pitch Extractor"),
-                        info=i18n("Pitch extract Algorith."),
-                        choices=["rmvpe", "crepe", "crepe-tiny", "fcpe"],
+                        info=i18n("Pitch extract algorithm."),
+                        choices=get_f0_methods_ui(),
                         value="rmvpe",
                         interactive=True,
                     )
-                    hop_length_back = gr.Slider(
+                    hop_length = gr.Slider(
                         label=i18n("Hop Length"),
-                        info=i18n("Hop length for pitch extraction."),
-                        minimum=1,
-                        maximum=512,
-                        step=1,
-                        value=64,
-                        visible=False,
+                        minimum=1, maximum=512, step=1, value=64,
+                        visible=False, interactive=True,
                     )
-                    embedder_model_back = gr.Radio(
+                    embedder_model = gr.Radio(
                         label=i18n("Embedder Model"),
-                        info=i18n("Model used for learning speaker embedding."),
-                        choices=[
-                            "contentvec",
-                            "chinese-hubert-base",
-                            "japanese-hubert-base",
-                            "korean-hubert-base",
-                        ],
+                        choices=["contentvec", "chinese-hubert-base", "japanese-hubert-base", "korean-hubert-base"],
                         value="contentvec",
                         interactive=True,
                     )
-                    autotune_back = gr.Checkbox(
-                        label=i18n("Autotune"),
-                        info=i18n(
-                            "Apply a soft autotune to your inferences, recommended for singing conversions."
-                        ),
-                        visible=True,
-                        value=False,
-                        interactive=True,
-                    )
-                    pitch_back = gr.Slider(
-                        label=i18n("Pitch"),
-                        info=i18n("Adjust the pitch of the audio."),
-                        minimum=-12,
-                        maximum=12,
-                        step=1,
-                        value=0,
-                        interactive=True,
-                    )
-                    filter_radius_back = gr.Slider(
-                        minimum=0,
-                        maximum=7,
-                        label=i18n("Filter Radius"),
-                        info=i18n(
-                            "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                        ),
-                        value=3,
-                        step=1,
-                        interactive=True,
-                    )
-                    index_rate_back = gr.Slider(
-                        minimum=0,
-                        maximum=1,
+                    index_rate = gr.Slider(
+                        minimum=0, maximum=1,
                         label=i18n("Search Feature Ratio"),
-                        info=i18n(
-                            "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
-                        ),
-                        value=0.75,
-                        interactive=True,
+                        info=i18n("Influence of index file."),
+                        value=0.75, interactive=True,
                     )
-                    rms_mix_rate_back = gr.Slider(
-                        minimum=0,
-                        maximum=1,
+                    rms_mix_rate = gr.Slider(
+                        minimum=0, maximum=1,
                         label=i18n("Volume Envelope"),
-                        info=i18n(
-                            "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                        ),
-                        value=0.25,
-                        interactive=True,
+                        info=i18n("Blend with volume envelope."),
+                        value=0.25, interactive=True,
                     )
-                    protect_back = gr.Slider(
-                        minimum=0,
-                        maximum=0.5,
+                    protect = gr.Slider(
+                        minimum=0, maximum=0.5,
                         label=i18n("Protect Voiceless Consonants"),
-                        info=i18n(
-                            "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
-                        ),
-                        value=0.33,
-                        interactive=True,
+                        value=0.33, interactive=True,
                     )
-                clear_outputs_infer = gr.Button(
-                    i18n("Clear Outputs (Deletes all audios in assets/audios)")
-                )
-                export_format_rvc = gr.Radio(
-                    label=i18n("Export Format"),
-                    info=i18n("Select the format to export the audio."),
-                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                    value="FLAC",
-                    interactive=True,
-                    visible=False,
-                )
-                split_audio = gr.Checkbox(
-                    label=i18n("Split Audio"),
-                    info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                pitch_extract = gr.Radio(
-                    label=i18n("Pitch Extractor"),
-                    info=i18n("Pitch extract Algorith."),
-                    choices=["rmvpe", "crepe", "crepe-tiny", "fcpe"],
-                    value="rmvpe",
-                    interactive=True,
-                )
-                hop_length = gr.Slider(
-                    label=i18n("Hop Length"),
-                    info=i18n("Hop length for pitch extraction."),
-                    minimum=1,
-                    maximum=512,
-                    step=1,
-                    value=64,
-                    visible=False,
-                )
-                embedder_model = gr.Radio(
-                    label=i18n("Embedder Model"),
-                    info=i18n("Model used for learning speaker embedding."),
-                    choices=[
-                        "contentvec",
-                        "chinese-hubert-base",
-                        "japanese-hubert-base",
-                        "korean-hubert-base",
-                    ],
-                    value="contentvec",
-                    interactive=True,
-                )
-                autotune = gr.Checkbox(
-                    label=i18n("Autotune"),
-                    info=i18n(
-                        "Apply a soft autotune to your inferences, recommended for singing conversions."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                pitch = gr.Slider(
-                    label=i18n("Pitch"),
-                    info=i18n("Adjust the pitch of the audio."),
-                    minimum=-12,
-                    maximum=12,
-                    step=1,
-                    value=0,
-                    interactive=True,
-                )
-                filter_radius = gr.Slider(
-                    minimum=0,
-                    maximum=7,
-                    label=i18n("Filter Radius"),
-                    info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                    ),
-                    value=3,
-                    step=1,
-                    interactive=True,
-                )
-                index_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Search Feature Ratio"),
-                    info=i18n(
-                        "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
-                    ),
-                    value=0.75,
-                    interactive=True,
-                )
-                rms_mix_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Volume Envelope"),
-                    info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                    ),
-                    value=0.25,
-                    interactive=True,
-                )
-                protect = gr.Slider(
-                    minimum=0,
-                    maximum=0.5,
-                    label=i18n("Protect Voiceless Consonants"),
-                    info=i18n(
-                        "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
-                    ),
-                    value=0.33,
-                    interactive=True,
-                )
-            with gr.Accordion(i18n("Audio Separation Settings"), open=False):
-                use_tta = gr.Checkbox(
-                    label=i18n("Use TTA"),
-                    info=i18n("Use Test Time Augmentation."),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                batch_size = gr.Slider(
-                    minimum=1,
-                    maximum=24,
-                    step=1,
-                    label=i18n("Batch Size"),
-                    info=i18n("Set the batch size for the separation."),
-                    value=1,
-                    interactive=True,
-                )
+
+        # Audio Separation Settings
+        with gr.Accordion(i18n("Audio Separation"), open=False):
+            with gr.Row():
                 vocal_model = gr.Dropdown(
                     label=i18n("Vocals Model"),
-                    info=i18n("Select the vocals model to use for the separation."),
                     choices=sorted(vocals_model_names),
-                    interactive=True,
                     value="Mel-Roformer by KimberleyJSN",
-                    allow_custom_value=False,
+                    interactive=True,
                 )
                 karaoke_model = gr.Dropdown(
                     label=i18n("Karaoke Model"),
-                    info=i18n("Select the karaoke model to use for the separation."),
                     choices=sorted(karaoke_models_names),
-                    interactive=True,
                     value="Mel-Roformer Karaoke by aufr33 and viperx",
-                    allow_custom_value=False,
+                    interactive=True,
                 )
                 dereverb_model = gr.Dropdown(
                     label=i18n("Dereverb Model"),
-                    info=i18n("Select the dereverb model to use for the separation."),
                     choices=sorted(dereverb_models_names),
-                    interactive=True,
                     value="UVR-Deecho-Dereverb",
-                    allow_custom_value=False,
+                    interactive=True,
                 )
+            with gr.Row():
                 deecho = gr.Checkbox(
-                    label=i18n("Deeecho"),
-                    info=i18n("Apply deeecho to the audio."),
-                    visible=True,
-                    value=True,
-                    interactive=True,
+                    label=i18n("Deecho"), value=True, interactive=True,
                 )
-                deeecho_model = gr.Dropdown(
-                    label=i18n("Deeecho Model"),
-                    info=i18n("Select the deeecho model to use for the separation."),
-                    choices=sorted(deeecho_models_names),
-                    interactive=True,
+                deecho_model = gr.Dropdown(
+                    label=i18n("Deecho Model"),
+                    choices=sorted(deecho_models_names),
                     value="UVR-Deecho-Normal",
-                    allow_custom_value=False,
-                )
-                denoise = gr.Checkbox(
-                    label=i18n("Denoise"),
-                    info=i18n("Apply denoise to the audio."),
-                    visible=True,
-                    value=False,
                     interactive=True,
+                )
+            with gr.Row():
+                denoise = gr.Checkbox(
+                    label=i18n("Denoise"), value=False, interactive=True,
                 )
                 denoise_model = gr.Dropdown(
                     label=i18n("Denoise Model"),
-                    info=i18n("Select the denoise model to use for the separation."),
                     choices=sorted(denoise_models_names),
-                    interactive=True,
                     value="Mel-Roformer Denoise Normal by aufr33",
-                    allow_custom_value=False,
-                    visible=False,
+                    visible=False, interactive=True,
                 )
-            with gr.Accordion(i18n("Audio post-process Settings"), open=False):
-                change_inst_pitch = gr.Slider(
-                    label=i18n("Change Instrumental Pitch"),
-                    info=i18n("Change the pitch of the instrumental."),
-                    minimum=-12,
-                    maximum=12,
-                    step=1,
-                    value=0,
-                    interactive=True,
+            with gr.Row():
+                use_tta = gr.Checkbox(
+                    label=i18n("Use TTA"), value=False, interactive=True,
                 )
-                delete_audios = gr.Checkbox(
-                    label=i18n("Delete Audios"),
-                    info=i18n("Delete the audios after the conversion."),
-                    visible=True,
-                    value=True,
-                    interactive=True,
+                batch_size = gr.Slider(
+                    minimum=1, maximum=24, step=1,
+                    label=i18n("Batch Size"), value=1, interactive=True,
                 )
+
+        # Post-process Settings
+        with gr.Accordion(i18n("Post-process & Output"), open=False):
+            with gr.Row():
+                with gr.Column():
+                    export_format_final = gr.Radio(
+                        label=i18n("Final Export Format"),
+                        choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                        value="FLAC", interactive=True,
+                    )
+                    change_inst_pitch = gr.Slider(
+                        label=i18n("Change Instrumental Pitch"),
+                        minimum=-12, maximum=12, step=1, value=0,
+                        interactive=True,
+                    )
+                    delete_audios = gr.Checkbox(
+                        label=i18n("Delete Intermediate Audios"),
+                        value=True, interactive=True,
+                    )
+                with gr.Column():
+                    vocals_volume = gr.Slider(
+                        label=i18n("Vocals Volume"),
+                        minimum=-10, maximum=0, step=1, value=-3,
+                        interactive=True,
+                    )
+                    instrumentals_volume = gr.Slider(
+                        label=i18n("Instrumentals Volume"),
+                        minimum=-10, maximum=0, step=1, value=-3,
+                        interactive=True,
+                    )
+                    backing_vocals_volume = gr.Slider(
+                        label=i18n("Backing Vocals Volume"),
+                        minimum=-10, maximum=0, step=1, value=-3,
+                        interactive=True,
+                    )
+
+            # Reverb
+            with gr.Accordion(i18n("Reverb"), open=False):
                 reverb = gr.Checkbox(
-                    label=i18n("Reverb"),
-                    info=i18n("Apply reverb to the audio."),
-                    visible=True,
-                    value=False,
-                    interactive=True,
+                    label=i18n("Enable Reverb"), value=False, interactive=True,
                 )
-                reverb_room_size = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Reverb Room Size"),
-                    info=i18n("Set the room size of the reverb."),
-                    value=0.5,
-                    interactive=True,
-                    visible=False,
-                )
+                with gr.Row(visible=False) as reverb_row:
+                    reverb_room_size = gr.Slider(minimum=0, maximum=1, label=i18n("Room Size"), value=0.5, interactive=True)
+                    reverb_damping = gr.Slider(minimum=0, maximum=1, label=i18n("Damping"), value=0.5, interactive=True)
+                    reverb_wet_gain = gr.Slider(minimum=0, maximum=1, label=i18n("Wet Gain"), value=0.33, interactive=True)
+                    reverb_dry_gain = gr.Slider(minimum=0, maximum=1, label=i18n("Dry Gain"), value=0.4, interactive=True)
+                    reverb_width = gr.Slider(minimum=0, maximum=1, label=i18n("Width"), value=1.0, interactive=True)
 
-                reverb_damping = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Reverb Damping"),
-                    info=i18n("Set the damping of the reverb."),
-                    value=0.5,
-                    interactive=True,
-                    visible=False,
-                )
+        # Backing Vocals
+        with gr.Accordion(i18n("Backing Vocals"), open=False):
+            infer_backing_vocals = gr.Checkbox(
+                label=i18n("Infer Backing Vocals"),
+                value=False, interactive=True,
+            )
 
-                reverb_wet_gain = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Reverb Wet Gain"),
-                    info=i18n("Set the wet gain of the reverb."),
-                    value=0.33,
+            with gr.Row(visible=False) as backing_row:
+                infer_backing_vocals_model = gr.Dropdown(
+                    label=i18n("Backing Vocals Model"),
+                    choices=sorted(names, key=lambda path: os.path.getsize(path)),
                     interactive=True,
-                    visible=False,
+                    value=default_weight,
+                    allow_custom_value=False,
+                )
+                infer_backing_vocals_index = gr.Dropdown(
+                    label=i18n("Backing Vocals Index"),
+                    choices=get_indexes(),
+                    value=match_index(default_weight) if default_weight else "",
+                    interactive=True,
+                    allow_custom_value=True,
                 )
 
-                reverb_dry_gain = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Reverb Dry Gain"),
-                    info=i18n("Set the dry gain of the reverb."),
-                    value=0.4,
-                    interactive=True,
-                    visible=False,
+                infer_backing_vocals_model.select(
+                    fn=lambda model_file_value: match_index(model_file_value),
+                    inputs=[infer_backing_vocals_model],
+                    outputs=[infer_backing_vocals_index],
                 )
 
-                reverb_width = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Reverb Width"),
-                    info=i18n("Set the width of the reverb."),
-                    value=1.0,
-                    interactive=True,
-                    visible=False,
-                )
-                vocals_volume = gr.Slider(
-                    label=i18n("Vocals Volume"),
-                    info=i18n("Adjust the volume of the vocals."),
-                    minimum=-10,
-                    maximum=0,
-                    step=1,
-                    value=-3,
-                    interactive=True,
-                )
-                instrumentals_volume = gr.Slider(
-                    label=i18n("Instrumentals Volume"),
-                    info=i18n("Adjust the volume of the Instrumentals."),
-                    minimum=-10,
-                    maximum=0,
-                    step=1,
-                    value=-3,
-                    interactive=True,
-                )
-                backing_vocals_volume = gr.Slider(
-                    label=i18n("Backing Vocals Volume"),
-                    info=i18n("Adjust the volume of the backing vocals."),
-                    minimum=-10,
-                    maximum=0,
-                    step=1,
-                    value=-3,
-                    interactive=True,
-                )
-                export_format_final = gr.Radio(
-                    label=i18n("Export Format"),
-                    info=i18n("Select the format to export the audio."),
-                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                    value="FLAC",
-                    interactive=True,
-                )
-            with gr.Accordion(i18n("Device Settings"), open=False):
-                devices = gr.Textbox(
-                    label=i18n("Device"),
-                    info=i18n(
-                        "Select the device to use for the conversion. 0 to ∞ separated by - and for CPU leave only an -"
-                    ),
-                    value=get_number_of_gpus(),
-                    interactive=True,
-                )
+            with gr.Accordion(i18n("RVC Settings for Backing Vocals"), open=False, visible=False) as back_rvc_settings:
+                with gr.Row():
+                    with gr.Column():
+                        export_format_rvc_back = gr.Radio(
+                            label=i18n("Export Format"),
+                            choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                            value="FLAC", interactive=True,
+                        )
+                        pitch_back = gr.Slider(
+                            label=i18n("Pitch"),
+                            minimum=-12, maximum=12, step=1, value=0,
+                            interactive=True,
+                        )
+                        filter_radius_back = gr.Slider(
+                            minimum=0, maximum=7,
+                            label=i18n("Filter Radius"), value=3, step=1,
+                            interactive=True,
+                        )
+                        split_audio_back = gr.Checkbox(label=i18n("Split Audio"), value=False, interactive=True)
+                        autotune_back = gr.Checkbox(label=i18n("Autotune"), value=False, interactive=True)
+                    with gr.Column():
+                        pitch_extract_back = gr.Radio(
+                            label=i18n("Pitch Extractor"),
+                            choices=get_f0_methods_ui(), value="rmvpe",
+                            interactive=True,
+                        )
+                        hop_length_back = gr.Slider(
+                            label=i18n("Hop Length"),
+                            minimum=1, maximum=512, step=1, value=64,
+                            visible=False, interactive=True,
+                        )
+                        embedder_model_back = gr.Radio(
+                            label=i18n("Embedder Model"),
+                            choices=["contentvec", "chinese-hubert-base", "japanese-hubert-base", "korean-hubert-base"],
+                            value="contentvec", interactive=True,
+                        )
+                        index_rate_back = gr.Slider(
+                            minimum=0, maximum=1,
+                            label=i18n("Search Feature Ratio"), value=0.75,
+                            interactive=True,
+                        )
+                        rms_mix_rate_back = gr.Slider(
+                            minimum=0, maximum=1,
+                            label=i18n("Volume Envelope"), value=0.25,
+                            interactive=True,
+                        )
+                        protect_back = gr.Slider(
+                            minimum=0, maximum=0.5,
+                            label=i18n("Protect Voiceless Consonants"), value=0.33,
+                            interactive=True,
+                        )
 
-    with gr.Row():
-        convert_button = gr.Button(i18n("Convert"))
+        # Device
+        with gr.Accordion(i18n("Device"), open=False):
+            devices = gr.Textbox(
+                label=i18n("GPU Devices"),
+                info=i18n("Device IDs separated by - (e.g. 0-1). Use '-' for CPU."),
+                value=get_number_of_gpus(),
+                interactive=True,
+            )
 
-    with gr.Row():
-        vc_output1 = gr.Textbox(
-            label=i18n("Output Information"),
-            info=i18n("The output information will be displayed here."),
-        )
-        vc_output2 = gr.Audio(label=i18n("Export Audio"))
-
-    def update_dropdown_visibility(checkbox):
-        return gr.update(visible=checkbox)
-
-    def update_reverb_sliders_visibility(reverb_checked):
-        return {
-            reverb_room_size: gr.update(visible=reverb_checked),
-            reverb_damping: gr.update(visible=reverb_checked),
-            reverb_wet_gain: gr.update(visible=reverb_checked),
-            reverb_dry_gain: gr.update(visible=reverb_checked),
-            reverb_width: gr.update(visible=reverb_checked),
-        }
-
-    def update_visibility_infer_backing(infer_backing_vocals):
-        visible = infer_backing_vocals
-        return (
-            {"visible": visible, "__type__": "update"},
-            {"visible": visible, "__type__": "update"},
-            {"visible": visible, "__type__": "update"},
-            {"visible": visible, "__type__": "update"},
-            {"visible": visible, "__type__": "update"},
-        )
-
-    def update_hop_length_visibility(pitch_extract_value):
-        return gr.update(visible=pitch_extract_value in ["crepe", "crepe-tiny"])
-
-    refresh_button.click(
-        fn=change_choices,
-        inputs=[],
-        outputs=[model_file, index_file, audio],
-    )
-    refresh_button_infer_backing_vocals.click(
-        fn=change_choices,
-        inputs=[],
-        outputs=[infer_backing_vocals_model, infer_backing_vocals_index],
-    )
+    # -- Event Handlers --
     upload_audio.upload(
         fn=save_to_wav,
         inputs=[upload_audio],
         outputs=[audio, output_path],
     )
-    clear_outputs_infer.click(
-        fn=delete_outputs,
-        inputs=[],
-        outputs=[],
-    )
+
+    # -- Action Buttons --
+    with gr.Row():
+        convert_button = gr.Button(
+            i18n("Convert"),
+            variant="primary",
+            size="lg",
+        )
+        refresh_button = gr.Button(
+            i18n("Refresh"),
+            size="lg",
+        )
+        unload_button = gr.Button(
+            i18n("Unload Model"),
+            size="lg",
+        )
+        clear_button = gr.Button(
+            i18n("Clear Outputs"),
+            variant="stop",
+            size="lg",
+        )
+
     convert_button.click(
         full_inference_program,
         inputs=[
@@ -801,7 +552,7 @@ def full_inference_tab():
             karaoke_model,
             dereverb_model,
             deecho,
-            deeecho_model,
+            deecho_model,
             denoise,
             denoise_model,
             reverb,
@@ -845,43 +596,49 @@ def full_inference_tab():
         outputs=[vc_output1, vc_output2],
     )
 
-    deecho.change(
-        fn=update_dropdown_visibility,
-        inputs=deecho,
-        outputs=deeecho_model,
+    refresh_button.click(
+        fn=change_choices,
+        inputs=[],
+        outputs=[model_file, index_file, audio],
     )
 
-    denoise.change(
-        fn=update_dropdown_visibility,
-        inputs=denoise,
-        outputs=denoise_model,
+    def unload_model():
+        gr.Info("Model unloaded.")
+        return (
+            gr.update(value=None),
+            gr.update(value=""),
+        )
+
+    unload_button.click(
+        fn=unload_model,
+        inputs=[],
+        outputs=[model_file, index_file],
     )
 
-    reverb.change(
-        fn=update_reverb_sliders_visibility,
-        inputs=reverb,
-        outputs=[
-            reverb_room_size,
-            reverb_damping,
-            reverb_wet_gain,
-            reverb_dry_gain,
-            reverb_width,
-        ],
-    )
-    pitch_extract.change(
-        fn=update_hop_length_visibility,
-        inputs=pitch_extract,
-        outputs=hop_length,
+    clear_button.click(
+        fn=lambda: (delete_outputs(), gr.update(value=""), gr.update(value=None)),
+        inputs=[],
+        outputs=[vc_output1, vc_output2],
     )
 
+    # Visibility toggles
+    deecho.change(fn=lambda c: gr.update(visible=c), inputs=deecho, outputs=deecho_model)
+    denoise.change(fn=lambda c: gr.update(visible=c), inputs=denoise, outputs=denoise_model)
+    reverb.change(fn=lambda c: gr.update(visible=c), inputs=reverb, outputs=reverb_row)
+
+    def update_visibility_infer_backing(v):
+        return (
+            gr.update(visible=v), gr.update(visible=v), gr.update(visible=v),
+        )
     infer_backing_vocals.change(
         fn=update_visibility_infer_backing,
         inputs=[infer_backing_vocals],
-        outputs=[
-            infer_backing_vocals_model,
-            infer_backing_vocals_index,
-            refresh_button_infer_backing_vocals,
-            unload_button_infer_backing_vocals,
-            back_rvc_settings,
-        ],
+        outputs=[backing_row, back_rvc_settings, infer_backing_vocals_index],
     )
+
+    pitch_extract.change(
+        fn=lambda v: gr.update(visible=v in ["crepe", "crepe-tiny", "onnxcrepe"]),
+        inputs=pitch_extract, outputs=hop_length,
+    )
+
+    return model_file, index_file, audio

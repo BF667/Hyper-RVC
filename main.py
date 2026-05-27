@@ -1,53 +1,19 @@
-import gradio as gr
-import sys, os
-from tabs.full_inference import full_inference_tab
-from tabs.download_model import download_model_tab
-from tabs.download_music import download_music_tab
-from tabs.settings import select_themes_tab
+"""
+Hyper-RVC WebUI – legacy entry point.
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
-DEFAULT_PORT = 7755
-MAX_PORT_ATTEMPTS = 10
+This file is kept for backward compatibility.  The actual WebUI code now
+lives in ``app.py``.  Running ``python main.py`` will redirect to
+``app.py`` automatically.
+"""
 
-from assets.i18n.i18n import I18nAuto
+import sys
+import os
 
-i18n = I18nAuto()
+# Run the new app module instead
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.argv = sys.argv  # preserve CLI args
 
-import assets.themes.loadThemes as loadThemes
-
-rvc_theme = loadThemes.load_json() or "ParityError/Interstellar"
-
-with gr.Blocks(
-    theme=rvc_theme, title="RVC AI Cover Maker", css="footer{display:none !important}"
-) as RVCAICoverMaker:
-    gr.Markdown("# RVC AI Cover Maker")
-    with gr.Tab(i18n("Full Inference")):
-        full_inference_tab()
-    with gr.Tab(i18n("Download Music")):
-        download_music_tab()
-    with gr.Tab(i18n("Download Model")):
-        download_model_tab()
-    with gr.Tab(i18n("Settings")):
-        select_themes_tab()
-
-
-def launch(port):
-    RVCAICoverMaker.launch(
-        favicon_path=os.path.join(now_dir, "assets", "logo.ico"),
-        share="--share" in sys.argv,
-        inbrowser="--open" in sys.argv,
-        server_port=port,
-    )
-
-
-def get_port_from_args():
-    if "--port" in sys.argv:
-        port_index = sys.argv.index("--port") + 1
-        if port_index < len(sys.argv):
-            return int(sys.argv[port_index])
-    return DEFAULT_PORT
-
+from app import *  # noqa: F401, F403
 
 if __name__ == "__main__":
     port = get_port_from_args()

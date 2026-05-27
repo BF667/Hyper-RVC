@@ -1,10 +1,31 @@
 {
   "theme": {
     "file": null,
-    "class": "nuttea/Softblue"
+    "class": "ParityError/Interstellar"
   },
   "lang": {
     "override": false,
     "selected_lang": "en_US"
+  },
+  "audio": {
+    "default_export_format": "FLAC",
+    "default_sample_rate": "44100",
+    "default_vocals_volume": -3,
+    "default_instrumentals_volume": -3,
+    "default_backing_volume": -3,
+    "default_pitch": 0,
+    "default_index_rate": 0.75,
+    "default_pitch_extract": "rmvpe",
+    "default_embedder": "contentvec"
+  },
+  "hardware": {
+    "default_devices": "0",
+    "default_fp16": true,
+    "default_batch_size": 4,
+    "default_use_tta": false
+  },
+  "ui": {
+    "auto_open_browser": true,
+    "delete_intermediate_files": true
   }
 }

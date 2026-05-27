@@ -164,3 +164,5 @@ cython_debug/
 .flac
 .pth
 .pt
+# ACE-Step source (large external clone)
+_acestep_src/

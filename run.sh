@@ -64,12 +64,12 @@ if [ ! -d "env" ]; then
     echo
 fi
 
-if [ ! -d "programs/applio_code/rvc/models" ]; then
-    python programs/applio_code/rvc/lib/tools/prerequisites_download.py
+if [ ! -d "main/rvc/engine/models/predictors" ]; then
+    python main/utils.py
     echo
 fi
 
-$INSTALL_ENV_DIR/bin/python main.py --open
+python main.py --open
 echo
 read -p "Press any key to continue..." -n1 -s
 exit 0

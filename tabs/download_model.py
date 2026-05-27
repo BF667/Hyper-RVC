@@ -1,16 +1,46 @@
 import gradio as gr
 import shutil
-import os, sys
-import regex as re
+import os
+import sys
+import re
 
-from core import download_model
-from programs.applio_code.rvc.lib.utils import format_title
+from main.tools.downloader import download_model, DOWNLOAD_METHODS
+from main.rvc.engine.lib.utils import format_title
 from assets.i18n.i18n import I18nAuto
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 i18n = I18nAuto()
+
+METHOD_DESCRIPTIONS = {
+    "auto": "Auto-detect source from URL",
+    "gdrive": "Google Drive",
+    "huggingface": "HuggingFace",
+    "mediafire": "MediaFire",
+    "pixeldrain": "PixelDrain",
+    "yandex": "Yandex Disk",
+    "discord": "Discord CDN",
+    "applio": "Applio.org Models",
+    "direct": "Direct URL (any file)",
+}
+
+
+def _build_method_choices():
+    """Return a list of display strings for the dropdown."""
+    return [f"{m} ({METHOD_DESCRIPTIONS.get(m, '')})" for m in DOWNLOAD_METHODS]
+
+
+def _parse_method(choice):
+    """Extract method key from display string like 'auto (Auto-detect...)'."""
+    return choice.split(" (")[0] if " (" in choice else choice
+
+
+def _detect_method_for_url(url):
+    """Auto-detect method and return the full display string."""
+    from main.tools.downloader import detect_method
+    detected = detect_method(url or "")
+    return f"{detected} ({METHOD_DESCRIPTIONS.get(detected, '')})"
 
 
 def save_drop_model(dropbox):
@@ -65,22 +95,60 @@ def save_drop_model(dropbox):
 
 
 def download_model_tab():
+    gr.Markdown(
+        "### Download Voice Model\n"
+        "Paste a model URL and select the download method. "
+        "Set to 'auto' to automatically detect the source."
+    )
+
     with gr.Row():
         link = gr.Textbox(
             label=i18n("Model URL"),
+            info=i18n("Google Drive, HuggingFace, MediaFire, PixelDrain, Yandex, Discord, Applio, or direct link."),
             lines=1,
+            scale=3,
         )
+        method_dropdown = gr.Dropdown(
+            label=i18n("Download Method"),
+            info=i18n("Select source or use auto-detect."),
+            choices=_build_method_choices(),
+            value=_build_method_choices()[0],
+            interactive=True,
+            scale=2,
+        )
+
+    with gr.Row():
+        download = gr.Button(i18n("Download"), variant="primary")
+        auto_detect_btn = gr.Button(i18n("Auto-detect method"))
+
     output = gr.Textbox(
         label=i18n("Output Information"),
-        info=i18n("The output information will be displayed here."),
+        info=i18n("Download progress and results will be displayed here."),
     )
-    download = gr.Button(i18n("Download"))
+
+    def on_auto_detect(url):
+        if not url or not url.strip():
+            return gr.update()
+        return gr.update(value=_detect_method_for_url(url.strip()))
+
+    def on_download(url, method_choice):
+        if not url or not url.strip():
+            return "Error: No URL provided"
+        method = _parse_method(method_choice)
+        return download_model(url.strip(), method)
+
+    auto_detect_btn.click(
+        fn=on_auto_detect,
+        inputs=[link],
+        outputs=[method_dropdown],
+    )
 
     download.click(
-        download_model,
-        inputs=[link],
+        fn=on_download,
+        inputs=[link, method_dropdown],
         outputs=[output],
     )
+
     gr.Markdown(value=i18n("## Drop files"))
     dropbox = gr.File(
         label=i18n(
