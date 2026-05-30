@@ -1,259 +1,212 @@
-# Hyper-RVC Settings & Languages Enhancement
+# Hyper-RVC Settings & Languages
 
 ## Overview
-This document describes the enhanced settings system and multi-language support added to Hyper-RVC.
-
-## New Settings Tab Features
-
-### 🎨 Appearance Tab
-- **Theme Selection**: Choose from available Gradio themes
-  - Real-time theme preview
-  - Persistent theme storage
-  - Status feedback on theme change
-
-- **Language Selection**: Select from 8 supported languages
-  - 🇺🇸 English (US)
-  - 🇧🇷 Português (Brasil)
-  - 🇪🇸 Español
-  - 🇫🇷 Français
-  - 🇩🇪 Deutsch
-  - 🇯🇵 日本語
-  - 🇰🇷 한국어
-  - 🇨🇳 简体中文
-  - Status feedback on language change
-  - Requires application restart to apply
-
-### 🎵 Audio Processing Tab
-
-#### Default Export Settings
-- **Export Format**: WAV, FLAC, MP3, OGG, M4A
-- **Sample Rate**: 44100, 48000, 22050, 16000 Hz
-
-#### Default Volume Settings
-- **Vocals Volume**: -20 to +10 dB (default: -3 dB)
-- **Instrumentals Volume**: -20 to +10 dB (default: -3 dB)
-- **Backing Vocals Volume**: -20 to +10 dB (default: -3 dB)
-
-#### Default RVC Settings
-- **Pitch**: -24 to +24 semitones (default: 0)
-- **Index Rate**: 0 to 1 (default: 0.75)
-- **Pitch Extractor**: rmvpe, crepe, fcpe, harvest
-- **Embedder Model**: contentvec, hubert
-
-### 💻 Hardware Tab
-
-#### GPU Settings
-- **GPU Devices**: Configurable device IDs (e.g., "0" or "0 1")
-- **FP16 Enable/Disable**: Toggle FP16 precision for faster inference
-- **Memory Guidelines**: Built-in help for GPU memory optimization
-
-#### Processing Settings
-- **Batch Size**: 1-32 (default: 4)
-- **TTA (Test Time Augmentation)**: Enable for better quality
-
-### ⚙️ Advanced Tab
-
-#### Advanced Options
-- **Reverb Room Size**: Default room size for reverb effect
-- **Reverb Wet Gain**: Default wet gain for reverb
-- **Delete Intermediate Files**: Auto-cleanup toggle
-- **Auto-open Browser**: Launch browser on startup toggle
-
-#### Reset Settings
-- One-click reset to factory defaults
-- Status feedback on reset operation
-
-### ℹ️ About Tab
-- Application version and credits
-- Feature list
-- Links to GitHub and Colab
+This document describes the settings system and multi-language support in Hyper-RVC. The application supports **135 languages** with automatic locale detection and community-contributed translations.
 
 ## Supported Languages
 
 ### Language Files Location
 `assets/i18n/languages/`
 
-### Available Languages
-| Code | Language | Native Name |
-|------|----------|-------------|
-| en_US | English | English (US) |
-| pt_BR | Portuguese | Português (Brasil) |
-| es_ES | Spanish | Español |
-| fr_FR | French | Français |
-| de_DE | German | Deutsch |
-| ja_JP | Japanese | 日本語 |
-| ko_KR | Korean | 한국어 |
-| zh_CN | Chinese (Simplified) | 简体中文 |
+### Full Language List (135 Languages)
 
-### Adding a New Language
+#### Major Languages (Full Translation)
+| Code | Language | Region |
+|------|----------|--------|
+| en_US | English | US |
+| en_GB | English | UK |
+| en_AU | English | Australia |
+| en_CA | English | Canada |
+| en_IN | English | India |
+| zh_CN | Chinese (Simplified) | China |
+| zh_TW | Chinese (Traditional) | Taiwan |
+| zh_HK | Chinese (Traditional) | Hong Kong |
+| ja_JP | Japanese | Japan |
+| ko_KR | Korean | Korea |
+| es_ES | Spanish | Spain |
+| es_MX | Spanish | Mexico |
+| es_AR | Spanish | Argentina |
+| es_CO | Spanish | Colombia |
+| fr_FR | French | France |
+| fr_CA | French | Canada |
+| fr_BE | French | Belgium |
+| de_DE | German | Germany |
+| de_AT | German | Austria |
+| de_CH | German | Switzerland |
+| it_IT | Italian | Italy |
+| it_CH | Italian | Switzerland |
+| pt_BR | Portuguese | Brazil |
+| pt_PT | Portuguese | Portugal |
+| ru_RU | Russian | Russia |
+| ru_KZ | Russian | Kazakhstan |
+| ar_SA | Arabic | Saudi Arabia |
+| ar_EG | Arabic | Egypt |
+| ar_MA | Arabic | Morocco |
+| hi_IN | Hindi | India |
+| tr_TR | Turkish | Turkey |
+| pl_PL | Polish | Poland |
+| nl_NL | Dutch | Netherlands |
+| nl_BE | Dutch | Belgium |
+| sv_SE | Swedish | Sweden |
+| sv_FI | Swedish | Finland |
+| cs_CZ | Czech | Czech Republic |
+| ro_RO | Romanian | Romania |
+| id_ID | Indonesian | Indonesia |
+| vi_VN | Vietnamese | Vietnam |
+| th_TH | Thai | Thailand |
+| uk_UA | Ukrainian | Ukraine |
+
+#### European Languages
+| Code | Language | Region |
+|------|----------|--------|
+| da_DK | Danish | Denmark |
+| fi_FI | Finnish | Finland |
+| el_GR | Greek | Greece |
+| he_IL | Hebrew | Israel |
+| hu_HU | Hungarian | Hungary |
+| no_NO | Norwegian | Norway |
+| nn_NO | Norwegian Nynorsk | Norway |
+| sk_SK | Slovak | Slovakia |
+| ca_ES | Catalan | Spain |
+| eu_ES | Basque | Spain |
+| gl_ES | Galician | Spain |
+| is_IS | Icelandic | Iceland |
+| sq_AL | Albanian | Albania |
+| be_BY | Belarusian | Belarus |
+| bs_BA | Bosnian | Bosnia |
+| cy_GB | Welsh | UK |
+| fo_FO | Faroese | Faroe Islands |
+| ga_IE | Irish | Ireland |
+| gd_GB | Scottish Gaelic | UK |
+| lb_LU | Luxembourgish | Luxembourg |
+| oc_FR | Occitan | France |
+| sc_IT | Sardinian | Italy |
+| et_EE | Estonian | Estonia |
+| lv_LV | Latvian | Latvia |
+| lt_LT | Lithuanian | Lithuania |
+| sl_SI | Slovenian | Slovenia |
+| sr_RS | Serbian | Serbia |
+| hr_HR | Croatian | Croatia |
+| bg_BG | Bulgarian | Bulgaria |
+| fil_PH | Filipino | Philippines |
+
+#### Asian Languages
+| Code | Language | Region |
+|------|----------|--------|
+| am_ET | Amharic | Ethiopia |
+| as_IN | Assamese | India |
+| az_AZ | Azerbaijani | Azerbaijan |
+| bo_CN | Tibetan | China |
+| br_FR | Breton | France |
+| ha_NG | Hausa | Nigeria |
+| haw_US | Hawaiian | US |
+| hy_AM | Armenian | Armenia |
+| ig_NG | Igbo | Nigeria |
+| ka_GE | Georgian | Georgia |
+| kk_KZ | Kazakh | Kazakhstan |
+| km_KH | Khmer | Cambodia |
+| ku_TR | Kurdish | Turkey |
+| ky_KG | Kyrgyz | Kyrgyzstan |
+| lg_UG | Luganda | Uganda |
+| ln_CD | Lingala | DR Congo |
+| lo_LA | Lao | Laos |
+| mg_MG | Malagasy | Madagascar |
+| mi_NZ | Maori | New Zealand |
+| mk_MK | Macedonian | North Macedonia |
+| mn_MN | Mongolian | Mongolia |
+| mt_MT | Maltese | Malta |
+| my_MM | Burmese | Myanmar |
+| ne_NP | Nepali | Nepal |
+| or_IN | Odia | India |
+| pa_IN | Punjabi | India |
+| pa_PK | Punjabi | Pakistan |
+| ps_AF | Pashto | Afghanistan |
+| sd_PK | Sindhi | Pakistan |
+| si_LK | Sinhala | Sri Lanka |
+| su_ID | Sundanese | Indonesia |
+| tg_TJ | Tajik | Tajikistan |
+| tk_TM | Turkmen | Turkmenistan |
+| tl_PH | Tagalog | Philippines |
+| tt_RU | Tatar | Russia |
+| ug_CN | Uyghur | China |
+| uz_UZ | Uzbek | Uzbekistan |
+| ms_MY | Malay | Malaysia |
+| ms_SG | Malay | Singapore |
+| sw_KE | Swahili | Kenya |
+| sw_TZ | Swahili | Tanzania |
+
+#### Indian Languages
+| Code | Language | Region |
+|------|----------|--------|
+| bn_BD | Bengali | Bangladesh |
+| ta_IN | Tamil | India |
+| te_IN | Telugu | India |
+| ml_IN | Malayalam | India |
+| mr_IN | Marathi | India |
+| gu_IN | Gujarati | India |
+| kn_IN | Kannada | India |
+| fa_IR | Persian (Farsi) | Iran |
+| ur_PK | Urdu | Pakistan |
+
+#### African & Indigenous Languages
+| Code | Language | Region |
+|------|----------|--------|
+| af_ZA | Afrikaans | South Africa |
+| bm_ML | Bambara | Mali |
+| ee_GH | Ewe | Ghana |
+| qu_PE | Quechua | Peru |
+| rn_BI | Rundi | Burundi |
+| rw_RW | Kinyarwanda | Rwanda |
+| sa_IN | Sanskrit | India |
+| so_SO | Somali | Somalia |
+| wo_SN | Wolof | Senegal |
+| xh_ZA | Xhosa | South Africa |
+| yi_US | Yiddish | US |
+| yo_NG | Yoruba | Nigeria |
+| zu_ZA | Zulu | South Africa |
+
+## Adding a New Language
 1. Create a new JSON file in `assets/i18n/languages/`
 2. Name it using the format: `{language_code}_{country_code}.json`
-3. Copy all keys from `en_US.json`
+3. Copy all keys from `en_US.json` as the base
 4. Translate the values to your target language
-5. The language will automatically appear in the settings
+5. Add a display name entry to the `language_names` dict in `tabs/settings.py`
+6. The language will automatically appear in the settings dropdown
 
 Example structure:
 ```json
 {
+    "Appearance": "Your Translation",
     "Theme": "Your Translation",
     "Language": "Your Translation",
     ...
 }
 ```
 
-## Configuration File
-
-### Location
-`assets/config.json`
-
-### Structure
+## Configuration
+Language settings are stored in `assets/config.json`:
 ```json
 {
-  "theme": {
-    "file": null,
-    "class": "ParityError/Interstellar"
-  },
   "lang": {
     "override": false,
     "selected_lang": "en_US"
-  },
-  "audio": {
-    "default_export_format": "FLAC",
-    "default_sample_rate": "44100",
-    "default_vocals_volume": -3,
-    "default_instrumentals_volume": -3,
-    "default_backing_volume": -3,
-    "default_pitch": 0,
-    "default_index_rate": 0.75,
-    "default_pitch_extract": "rmvpe",
-    "default_embedder": "contentvec"
-  },
-  "hardware": {
-    "default_devices": "0",
-    "default_fp16": true,
-    "default_batch_size": 4,
-    "default_use_tta": false
-  },
-  "ui": {
-    "auto_open_browser": true,
-    "delete_intermediate_files": true
   }
 }
 ```
 
-## Internationalization (i18n) Module
-
-### Updated Features
-- Automatic language detection from system locale
-- Graceful fallback to English if language not found
-- Language reload capability
-- Better error handling
-
-### Usage
+## i18n Module Usage
 ```python
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
-
-# Get translation
 text = i18n("Theme")  # Returns translated text
-
-# Get current language
 current = i18n.get_current_language()
-
-# Get available languages
-languages = i18n.get_available_languages()
-
-# Switch language
-i18n.reload_language("es_ES")
+i18n.reload_language("es_ES")  # Switch language
 ```
 
-## Files Modified
+## Translation Coverage
+- **Full translation** (~185 keys): Major languages with complete coverage
+- **Core translation** (~60-65 keys): Newer languages with essential UI strings translated
+- **English fallback**: Remaining keys show English text (graceful fallback)
 
-### Core Files
-- `tabs/settings.py` - Complete rewrite with new settings UI
-- `assets/i18n/i18n.py` - Enhanced i18n module
-- `assets/config.json` - Extended configuration structure
-- `assets/i18n/languages/en_US.json` - Updated with new keys
-
-### New Language Files
-- `assets/i18n/languages/es_ES.json` - Spanish
-- `assets/i18n/languages/fr_FR.json` - French
-- `assets/i18n/languages/de_DE.json` - German
-- `assets/i18n/languages/ja_JP.json` - Japanese
-- `assets/i18n/languages/ko_KR.json` - Korean
-- `assets/i18n/languages/zh_CN.json` - Chinese (Simplified)
-
-## Usage Guide
-
-### Changing Theme
-1. Go to Settings tab
-2. Select "Appearance" sub-tab
-3. Choose a theme from the dropdown
-4. Status message confirms the change
-
-### Changing Language
-1. Go to Settings tab
-2. Select "Appearance" sub-tab
-3. Choose a language from the dropdown
-4. Status message confirms the change
-5. **Restart the application** for changes to take effect
-
-### Configuring Defaults
-1. Go to Settings tab
-2. Navigate to relevant sub-tab (Audio Processing, Hardware, Advanced)
-3. Adjust settings as needed
-4. Settings are saved automatically
-
-### Resetting to Defaults
-1. Go to Settings tab
-2. Select "Advanced" sub-tab
-3. Click "Reset All Settings to Defaults"
-4. Status message confirms the operation
-5. Restart the application
-
-## Benefits
-
-### For Users
-- **Personalized Experience**: Customize the UI to your preferences
-- **Multi-language Support**: Use the application in your native language
-- **Persistent Settings**: Settings are saved and restored
-- **Easy Reset**: One-click reset if something goes wrong
-
-### For Developers
-- **Extensible**: Easy to add new languages
-- **Well-documented**: Clear structure and comments
-- **Type-safe**: Type hints throughout the code
-- **Error-handling**: Graceful fallbacks and error messages
-
-## Future Enhancements
-
-Potential improvements for future versions:
-- [ ] Real-time language switching without restart
-- [ ] User presets for different use cases
-- [ ] Import/export settings functionality
-- [ ] More granular audio processing defaults
-- [ ] Additional languages (Italian, Russian, Hindi, Arabic, etc.)
-- [ ] Language contribution system for community translations
-
-## Troubleshooting
-
-### Language Not Changing
-1. Make sure to restart the application after changing language
-2. Check if the language file exists in `assets/i18n/languages/`
-3. Verify the language code matches the filename
-
-### Settings Not Saving
-1. Check file permissions on `assets/config.json`
-2. Ensure the application has write access
-3. Try running as administrator (Windows) or with sudo (Linux/Mac)
-
-### Theme Not Applying
-1. Some themes may require internet connection to load
-2. Check if the theme name is valid
-3. Try a different theme to isolate the issue
-
-## Credits
-- Original i18n system: ShiromiyaG
-- Enhanced settings system: Current development
-- Language translations: Community contributions
+The system automatically falls back to the English key if a translation is not found, ensuring the UI remains functional in all languages.
