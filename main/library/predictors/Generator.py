@@ -19,7 +19,6 @@ import re
 import sys
 import math
 import torch
-import parselmouth
 
 import numba as nb
 import numpy as np
@@ -424,6 +423,15 @@ class Generator:
 
     def get_f0_pm(self, x, p_len, filter_radius=3, mode="ac"):
         """F0 via parselmouth (Praat): ac, cc, or shs algorithm."""
+        try:
+            import parselmouth
+        except ImportError:
+            logger.warning(
+                "parselmouth is not installed. "
+                "Install it with: pip install praat-parselmouth"
+            )
+            return self.get_f0_rmvpe(x, p_len, filter_radius)
+
         time_step = self.window / self.sample_rate * 1000 / 1000
 
         pm = parselmouth.Sound(x, self.sample_rate)
