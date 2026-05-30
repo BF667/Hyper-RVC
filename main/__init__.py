@@ -52,6 +52,12 @@ from main.tools.downloader import (  # noqa: E402, F401
     download_music,
 )
 
+from main.utils import (  # noqa: E402, F401
+    download_all_pipeline,
+    download_acestep_models,
+    download_predictor,
+)
+
 from main.rvc.converter import (  # noqa: E402, F401
     import_voice_converter,
     get_config,
@@ -97,6 +103,10 @@ __all__ = [
     # downloader
     "download_model",
     "download_music",
+    # utils
+    "download_all_pipeline",
+    "download_acestep_models",
+    "download_predictor",
     # rvc
     "import_voice_converter",
     "get_config",

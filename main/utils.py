@@ -159,5 +159,71 @@ def _download_file_no_size(url, destination_path):
             file.write(chunk)
 
 
+# ===================================================================
+# ACE-Step model auto-download
+# ===================================================================
+
+def download_acestep_models():
+    """Download ACE-Step models (DiT, VAE, text encoder, LM) if missing.
+
+    Scans the ``checkpoints/`` directory for required ACE-Step model
+    folders.  If any are absent, downloads them from HuggingFace using
+    ``huggingface_hub.snapshot_download``.
+
+    This function is safe to call on every startup — it only
+    downloads files that do not already exist.
+    """
+    import json
+
+    now = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    checkpoint_dir = os.path.join(now, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    # Required model directories that should be present
+    required_models = ["acestep-v15-turbo"]
+    # Check for shared component directories (vae, Qwen3-Embedding-0.6B)
+    required_components = ["vae", "Qwen3-Embedding-0.6B"]
+
+    # Check which models/components already exist
+    missing = []
+    for model_name in required_models:
+        model_path = os.path.join(checkpoint_dir, model_name)
+        if not os.path.exists(model_path) or not os.listdir(model_path):
+            missing.append(model_name)
+
+    for comp_name in required_components:
+        comp_path = os.path.join(checkpoint_dir, comp_name)
+        if not os.path.exists(comp_path) or not os.listdir(comp_path):
+            missing.append(comp_name)
+
+    if not missing:
+        logger.info("All ACE-Step models already present, skipping download.")
+        return
+
+    logger.info(f"ACE-Step: {len(missing)} model(s) missing, downloading...")
+    try:
+        from huggingface_hub import snapshot_download
+
+    except ImportError:
+        logger.error(
+            "huggingface_hub not installed. Cannot auto-download ACE-Step models. "
+            "Run: pip install huggingface_hub"
+        )
+        return
+
+    # The unified repo contains: acestep-v15-turbo, vae, Qwen3-Embedding-0.6B, LM models
+    try:
+        logger.info("Downloading ACE-Step unified repository (acestep-v15-turbo)...")
+        snapshot_download(
+            repo_id="ACE-Step/Ace-Step1.5",
+            local_dir=checkpoint_dir,
+            local_dir_use_symlinks=False,
+        )
+        logger.info("ACE-Step models downloaded successfully.")
+    except Exception as e:
+        logger.error(f"Failed to download ACE-Step models: {e}")
+
+
 if __name__ == "__main__":
     download_all_pipeline()
+    download_acestep_models()

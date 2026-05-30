@@ -203,10 +203,15 @@ def separate_vocals(
                 os.path.join(inst_dir, f"{input_audio_basename}_instrumentals.flac"),
             )
 
-    inst_file = os.path.join(
-        inst_dir,
-        search_with_two_words(inst_dir, input_audio_basename, "instrumentals"),
-    )
+    inst_name = search_with_two_words(inst_dir, input_audio_basename, "instrumentals")
+    if inst_name is None:
+        logger.warning(
+            f"Instrumental file not found after vocal separation for "
+            f"{input_audio_basename}". The instrumental stem may not have been "
+            f"extracted."
+        )
+        return None
+    inst_file = os.path.join(inst_dir, inst_name)
     return inst_file
 
 

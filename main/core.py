@@ -138,6 +138,16 @@ def full_inference_program(
     inst_file = separate_vocals(
         input_audio_path, vocal_model, store_dir, inst_dir, devices, use_fp16
     )
+    if inst_file is None:
+        logger.error(
+            "Vocal separation failed — instrumental file was not produced. "
+            "Check that the vocal separation model downloaded correctly and "
+            "that the input audio is valid."
+        )
+        raise RuntimeError(
+            "Vocal separation did not produce an instrumental file. "
+            "See the log for details."
+        )
 
     # ------------------------------------------------------------------
     # 2. Karaoke separation
