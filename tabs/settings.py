@@ -246,14 +246,14 @@ def save_theme_selection(theme):
 
 def get_current_theme():
     """Get currently selected theme."""
-    return _read_config().get("theme", {}).get("class", "ParityError/Interstellar")
+    return _read_config().get("theme", {}).get("class", "HyperRVC")
 
 
 def reset_to_defaults():
     """Reset all settings to defaults."""
     try:
         _write_config({
-            "theme": {"file": None, "class": "ParityError/Interstellar"},
+            "theme": {"file": None, "class": "HyperRVC"},
             "lang": {"override": False, "selected_lang": "en_US"},
         })
         return "Settings reset. Restart the app to apply."

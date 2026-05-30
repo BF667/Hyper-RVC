@@ -1,7 +1,7 @@
 {
   "theme": {
-    "file": null,
-    "class": "ParityError/Interstellar"
+    "file": "HyperRVC.py",
+    "class": "HyperRVC"
   },
   "lang": {
     "override": false,

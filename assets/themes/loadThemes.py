@@ -90,10 +90,10 @@ def read_json():
             elif selected_file == None and class_name:
                 return class_name
             else:
-                return "ParityError/Interstellar"
+                return "HyperRVC"
     except Exception as error:
         print(f"An error occurred loading the theme: {error}")
-        return "ParityError/Interstellar"
+        return "HyperRVC"
 
 
 def load_json():

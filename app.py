@@ -34,7 +34,7 @@ from tabs.tts_inference import tts_inference_tab
 from tabs.realtime_tab import realtime_tab
 from tabs.acestep_tab import acestep_tab
 
-rvc_theme = loadThemes.load_json() or "ParityError/Interstellar"
+rvc_theme = loadThemes.load_json() or "HyperRVC"
 
 with gr.Blocks(
     theme=rvc_theme, title="HyperRVC", css="footer{display:none !important}"

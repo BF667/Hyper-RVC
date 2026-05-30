@@ -206,9 +206,9 @@ def separate_vocals(
     inst_name = search_with_two_words(inst_dir, input_audio_basename, "instrumentals")
     if inst_name is None:
         logger.warning(
-            f"Instrumental file not found after vocal separation for "
-            f"{input_audio_basename}". The instrumental stem may not have been "
-            f"extracted."
+            "Instrumental file not found after vocal separation for "
+            f"{input_audio_basename}. The instrumental stem may not have been "
+            "extracted."
         )
         return None
     inst_file = os.path.join(inst_dir, inst_name)
