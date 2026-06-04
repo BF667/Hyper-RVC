@@ -1,193 +1,1294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HyperRVC – Custom Front-End</title>
-    <style>
-        :root {
-            --bg-primary: #0D0B12;
-            --bg-secondary: #12101A;
-            --bg-block: #16131F;
-            --text-body: #E8E6F0;
-            --text-subdued: #8B87A0;
-            --primary-500: #6366f1;
-            --primary-600: #4f46e5;
-            --radius-md: 8px;
-            --radius-lg: 12px;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HyperRVC WebUI</title>
+<style>
+:root {
+  --bg-primary:#0D0B12;--bg-secondary:#12101A;--bg-block:#16131F;
+  --bg-input:#12101A;--bg-input-hover:#1A1628;--bg-label:#1E1B2E;--bg-title:#1E1B2E;
+  --text-body:#E8E6F0;--text-subdued:#8B87A0;--text-placeholder:#5B5775;
+  --text-label:#a5b4fc;--text-title:#a5b4fc;
+  --primary-300:#a5b4fc;--primary-400:#818cf8;--primary-500:#6366f1;--primary-600:#4f46e5;
+  --secondary-500:#8b5cf6;--secondary-600:#7c3aed;
+  --border-primary:#1E1B2E;--border-accent:#4f46e5;--border-input:#2A2640;--border-input-hover:#71717a;
+  --btn-primary-bg:#4f46e5;--btn-primary-bg-hover:#6366f1;--btn-primary-text:#fff;
+  --btn-secondary-bg:transparent;--btn-secondary-bg-hover:#27272a;--btn-secondary-text:#E8E6F0;
+  --btn-cancel-bg:#27272a;--btn-cancel-bg-hover:#3f3f46;--btn-cancel-text:#E8E6F0;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
+  --shadow-block:0 2px 8px rgba(0,0,0,0.3);
+  --slider-color:#8B5CF6;--checkbox-bg:#2A2640;--checkbox-selected:#7c3aed;
+  --error-bg:#1C0F0F;--error-border:#7F1D1D;--error-text:#FCA5A5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg-primary);color:var(--text-body);min-height:100vh;display:flex;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-primary)}
+::-webkit-scrollbar-thumb{background:var(--border-input);border-radius:var(--radius-sm)}
+::-webkit-scrollbar-thumb:hover{background:var(--border-input-hover)}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+/* Sidebar */
+.sidebar{width:220px;min-width:220px;background:var(--bg-secondary);border-right:1px solid var(--border-primary);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sidebar .logo{padding:20px 16px;border-bottom:1px solid var(--border-primary)}
+.sidebar .logo h1{font-size:1.4em;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar .logo span{font-size:0.75em;color:var(--text-subdued)}
+.nav-item{padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--text-subdued);transition:all 0.2s;border-left:3px solid transparent;font-size:0.92em}
+.nav-item:hover{background:var(--bg-block);color:var(--text-body)}
+.nav-item.active{color:var(--primary-300);border-left-color:var(--primary-500);background:rgba(99,102,241,0.08)}
+.nav-item .icon{font-size:1.2em;width:24px;text-align:center}
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-body);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.header{padding:16px 24px;border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between}
+.header h2{font-size:1.2em;color:var(--text-title)}
+.header .status-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;margin-left:8px;display:inline-block}
+.content{flex:1;overflow-y:auto;padding:24px}
+.page{display:none}.page.active{display:block}
 
-        header {
-            background: var(--bg-secondary);
-            padding: 16px 32px;
-            border-bottom: 1px solid rgba(99,102,241,0.2);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+/* Cards */
+.card{background:var(--bg-block);border:1px solid var(--border-primary);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;box-shadow:var(--shadow-block)}
+.card h3{color:var(--text-title);margin-bottom:12px;font-size:1.05em}
+.card h4{color:var(--primary-300);margin:12px 0 8px;font-size:0.95em}
 
-        header h1 {
-            font-size: 1.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+/* Form elements */
+label{display:block;color:var(--text-label);font-size:0.85em;margin-bottom:4px;font-weight:500}
+.info{color:var(--text-subdued);font-size:0.8em;margin-bottom:6px}
+input[type="text"],input[type="number"],textarea,select{width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text-body);border-radius:var(--radius-md);padding:8px 12px;font-size:0.9em;transition:0.2s}
+input:hover,textarea:hover,select:hover{border-color:var(--border-input-hover);background:var(--bg-input-hover)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--border-accent);box-shadow:0 0 0 2px rgba(99,102,241,0.25)}
+select{cursor:pointer;appearance:auto}
+input[type="range"]{width:100%;accent-color:var(--slider-color);cursor:pointer}
+input[type="color"]{width:48px;height:32px;border:1px solid var(--border-input);border-radius:var(--radius-sm);background:var(--bg-input);cursor:pointer;padding:2px}
+input[type="checkbox"]{accent-color:var(--checkbox-selected);cursor:pointer;width:16px;height:16px}
+input::placeholder,textarea::placeholder{color:var(--text-placeholder)}
 
-        header .badge {
-            font-size: 0.75em;
-            padding: 4px 10px;
-            border-radius: 999px;
-            background: var(--primary-600);
-            color: #fff;
-        }
+/* Buttons */
+.btn{padding:8px 20px;border-radius:var(--radius-md);border:1px solid var(--border-input);background:var(--btn-secondary-bg);color:var(--btn-secondary-text);cursor:pointer;font-size:0.9em;font-weight:500;transition:0.25s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--btn-secondary-bg-hover)}
+.btn-primary{background:var(--btn-primary-bg);color:var(--btn-primary-text);border-color:var(--btn-primary-bg)}
+.btn-primary:hover{background:var(--btn-primary-bg-hover)}
+.btn-danger{background:var(--btn-cancel-bg);color:var(--btn-cancel-text);border-color:var(--btn-cancel-bg)}
+.btn-danger:hover{background:var(--btn-cancel-bg-hover)}
+.btn-lg{padding:12px 28px;font-size:1em}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn .spinner{display:none;width:16px;height:16px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin 0.6s linear infinite}
+.btn.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-            gap: 24px;
-        }
+/* Grid helpers */
+.row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.col{flex:1;min-width:0}
+.col-2{flex:2}.col-3{flex:3}.col-half{flex:0 0 48%}
+.gap-sm{gap:6px}.gap-md{gap:12px}.gap-lg{gap:20px}
+.mb-sm{margin-bottom:8px}.mb-md{margin-bottom:12px}.mb-lg{margin-bottom:20px}
+.mt-md{margin-top:12px}
 
-        .card {
-            background: var(--bg-block);
-            border-radius: var(--radius-lg);
-            padding: 32px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
+/* Accordion */
+.accordion{border:1px solid var(--border-primary);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden}
+.accordion-header{padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--bg-label);color:var(--text-label);font-weight:500;font-size:0.9em;transition:0.2s}
+.accordion-header:hover{background:var(--bg-title)}
+.accordion-header::after{content:'▸';transition:transform 0.2s}
+.accordion.open .accordion-header::after{transform:rotate(90deg)}
+.accordion-body{padding:16px;display:none;background:var(--bg-block)}
+.accordion.open .accordion-body{display:block}
 
-        .card h2 {
-            margin-bottom: 12px;
-            color: #a5b4fc;
-        }
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border-primary);margin-bottom:16px}
+.tab-btn{padding:10px 20px;cursor:pointer;color:var(--text-subdued);border:none;background:none;font-size:0.9em;border-bottom:2px solid transparent;transition:0.2s}
+.tab-btn:hover{color:var(--text-body)}
+.tab-btn.active{color:var(--text-body);border-bottom-color:var(--primary-500)}
+.tab-content{display:none}.tab-content.active{display:block}
 
-        .card p {
-            color: var(--text-subdued);
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
+/* Audio */
+audio{width:100%;margin-top:8px;border-radius:var(--radius-md)}
 
-        .btn {
-            display: inline-block;
-            padding: 10px 24px;
-            border-radius: var(--radius-md);
-            border: none;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: 0.25s ease all;
-            text-decoration: none;
-        }
+/* Toast */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:var(--radius-md);color:#fff;font-size:0.9em;animation:slideIn 0.3s;min-width:280px;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+.toast.success{background:#16a34a}.toast.error{background:#dc2626}.toast.info{background:var(--primary-600)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 
-        .btn-primary {
-            background: var(--primary-600);
-            color: #fff;
-        }
+/* Status / output */
+.status-box{padding:10px 14px;border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-subdued);font-size:0.85em;min-height:36px;word-break:break-word}
+.output-text{padding:12px;border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-body);font-family:monospace;font-size:0.85em;white-space:pre-wrap;max-height:400px;overflow-y:auto}
 
-        .btn-primary:hover {
-            background: var(--primary-500);
-        }
+/* File drop */
+.drop-zone{border:2px dashed var(--border-input);border-radius:var(--radius-lg);padding:30px;text-align:center;color:var(--text-subdued);cursor:pointer;transition:0.2s}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--primary-500);background:rgba(99,102,241,0.05)}
 
-        .status {
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: var(--radius-md);
-            background: var(--bg-secondary);
-            font-size: 0.9em;
-        }
+/* Loading overlay */
+.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,11,18,0.7);z-index:9998;display:none;justify-content:center;align-items:center}
+.loading-overlay.show{display:flex}
+.loading-spinner{width:48px;height:48px;border:4px solid var(--border-input);border-top-color:var(--primary-500);border-radius:50%;animation:spin 0.8s linear infinite}
 
-        footer {
-            text-align: center;
-            padding: 16px;
-            color: var(--text-subdued);
-            font-size: 0.85em;
-        }
-    </style>
+/* Color picker grid */
+.color-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.color-item{display:flex;align-items:center;gap:8px}
+.color-item label{margin:0;flex:1;font-size:0.82em}
+.color-item input[type="color"]{width:40px;height:28px;flex-shrink:0}
+
+/* Theme preview */
+.theme-preview{border:1px solid var(--border-primary);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px}
+.theme-preview .preview-btn{margin:4px}
+</style>
 </head>
 <body>
-    <header>
-        <h1>HyperRVC</h1>
-        <span class="badge">Custom Static Front-End</span>
-    </header>
 
-    <main>
-        <div class="card">
-            <h2>Gradio Backend Connection</h2>
-            <p>
-                This custom static front-end connects to the Gradio backend server.
-                The Gradio server exposes a REST API that this page can call to
-                perform inference, download models, and manage settings.
-            </p>
-            <p>
-                Click the button below to check the Gradio API status. The Gradio
-                API is available at <code>/api/</code> and supports all the same
-                operations as the built-in Gradio UI.
-            </p>
-            <button class="btn btn-primary" id="checkBtn">Check Gradio API</button>
-            <div class="status" id="status" style="display:none;"></div>
+<!-- Sidebar Navigation -->
+<nav class="sidebar">
+  <div class="logo"><h1>HyperRVC</h1><span>Custom Web UI</span></div>
+  <div class="nav-item active" data-page="inference"><span class="icon">🎤</span>Inference</div>
+  <div class="nav-item" data-page="download"><span class="icon">📥</span>Download</div>
+  <div class="nav-item" data-page="tts"><span class="icon">🔊</span>TTS</div>
+  <div class="nav-item" data-page="whisper"><span class="icon">📝</span>Whisper</div>
+  <div class="nav-item" data-page="acestep"><span class="icon">🎵</span>ACE-Step</div>
+  <div class="nav-item" data-page="settings"><span class="icon">⚙️</span>Settings</div>
+</nav>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="header">
+    <h2 id="pageTitle">Inference</h2>
+    <div><span class="status-dot"></span> Connected</div>
+  </div>
+  <div class="content">
+
+<!-- ═══════════════════ INFERERENCE PAGE ═══════════════════ -->
+<div class="page active" id="page-inference">
+  <div class="card">
+    <h3>Voice Model</h3>
+    <div class="row gap-md mb-md">
+      <div class="col"><label>Voice Model</label><select id="inf-model"><option value="">Loading...</option></select></div>
+      <div class="col"><label>Filter</label><input type="text" id="inf-filter" placeholder="Type to filter..."/></div>
+      <div class="col"><label>Index File</label><select id="inf-index"><option value="">Loading...</option></select></div>
+    </div>
+    <div class="row gap-sm">
+      <button class="btn" onclick="inferenceUnload()">Unload Voice</button>
+      <button class="btn" onclick="inferenceRefresh()">Refresh</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="infTabs">
+    <button class="tab-btn active" data-tab="inf-full">Full Pipeline</button>
+    <button class="tab-btn" data-tab="inf-quick">Quick Convert</button>
+  </div>
+
+  <!-- Full Pipeline -->
+  <div class="tab-content active" id="tab-inf-full">
+    <div class="card">
+      <h3>Audio Input</h3>
+      <div class="row gap-md mb-md">
+        <div class="col-3"><label>Upload Audio</label><input type="file" id="inf-audio-upload" accept="audio/*"/></div>
+        <div class="col-3"><label>Select Audio</label><select id="inf-audio-select"><option value="">Loading...</option></select></div>
+      </div>
+      <div class="row gap-md mb-md">
+        <div class="col"><label>Output Info</label><div class="status-box" id="inf-status">Ready</div></div>
+        <div class="col"><label>Export Audio</label><audio id="inf-output-audio" controls style="display:none"></audio></div>
+      </div>
+    </div>
+
+    <div class="accordion" id="acc-inf-advanced">
+      <div class="accordion-header" onclick="toggleAccordion(this)">Advanced Settings</div>
+      <div class="accordion-body">
+        <div class="row gap-md mb-md">
+          <div class="col"><label>Export Format</label><select id="inf-export-fmt"><option>WAV</option><option>MP3</option><option selected>FLAC</option><option>OGG</option><option>M4A</option></select></div>
+          <div class="col"><label>Speaker ID</label><select id="inf-sid"><option>0</option></select></div>
+          <div class="col"><label><input type="checkbox" id="inf-split"/> Split Audio</label></div>
+          <div class="col"><label><input type="checkbox" id="inf-autotune"/> Autotune</label></div>
         </div>
+      </div>
+    </div>
 
-        <div class="card">
-            <h2>How to Use</h2>
-            <p>
-                <strong>Option 1 – Gradio Built-in UI:</strong> Navigate to
-                <code>/</code> to use the full Gradio interface with the custom
-                theme editor.
-            </p>
-            <p>
-                <strong>Option 2 – Custom Front-End:</strong> Use this page or
-                build your own front-end that calls the Gradio API endpoints.
-                The API documentation is available at <code>/api/</code> or
-                <code>/?view=api</code>.
-            </p>
-            <p>
-                <strong>Option 3 – Embed:</strong> You can embed the Gradio app
-                in any web page using an iframe or the Gradio JS client library.
-            </p>
+    <div class="accordion" id="acc-inf-rvc">
+      <div class="accordion-header" onclick="toggleAccordion(this)">RVC Settings</div>
+      <div class="accordion-body">
+        <div class="mb-md"><label>Pitch (-24 to 24)</label><input type="range" id="inf-pitch" min="-24" max="24" value="0" step="1"/><span id="inf-pitch-val">0</span></div>
+        <div class="mb-md"><label>Filter Radius (0-7)</label><input type="range" id="inf-filter-radius" min="0" max="7" value="3" step="1"/><span id="inf-filter-radius-val">3</span></div>
+        <div class="mb-md"><label>Search Feature Ratio</label><input type="range" id="inf-index-rate" min="0" max="1" value="0.75" step="0.01"/><span id="inf-index-rate-val">0.75</span></div>
+        <div class="mb-md"><label>Volume Envelope</label><input type="range" id="inf-rms" min="0" max="1" value="0.25" step="0.01"/><span id="inf-rms-val">0.25</span></div>
+        <div class="mb-md"><label>Protect Voiceless Consonants</label><input type="range" id="inf-protect" min="0" max="0.5" value="0.33" step="0.01"/><span id="inf-protect-val">0.33</span></div>
+        <div class="row gap-md mb-md">
+          <div class="col"><label>Pitch Extractor</label><select id="inf-f0"><option value="rmvpe" selected>rmvpe</option></select></div>
+          <div class="col"><label>Embedder Model</label><select id="inf-embedder"><option value="contentvec" selected>contentvec</option></select></div>
         </div>
-    </main>
+      </div>
+    </div>
 
-    <footer>
-        HyperRVC WebUI &mdash; Gradio Backend + Custom Static Front-End
-    </footer>
+    <div class="accordion" id="acc-inf-sep">
+      <div class="accordion-header" onclick="toggleAccordion(this)">Audio Separation Settings</div>
+      <div class="accordion-body">
+        <div class="row gap-md mb-md">
+          <div class="col"><label>Vocals Model</label><select id="inf-vocal-model"></select></div>
+          <div class="col"><label>Karaoke Model</label><select id="inf-karaoke-model"></select></div>
+          <div class="col"><label>Dereverb Model</label><select id="inf-dereverb-model"></select></div>
+        </div>
+        <div class="row gap-md mb-md">
+          <div class="col"><label><input type="checkbox" id="inf-deecho" checked/> Deecho</label></div>
+          <div class="col"><label>Deecho Model</label><select id="inf-deecho-model"></select></div>
+        </div>
+        <div class="row gap-md mb-md">
+          <div class="col"><label><input type="checkbox" id="inf-denoise"/> Denoise</label></div>
+          <div class="col"><label>Denoise Model</label><select id="inf-denoise-model"></select></div>
+        </div>
+        <div class="row gap-md">
+          <div class="col"><label><input type="checkbox" id="inf-tta"/> Use TTA</label></div>
+          <div class="col"><label>Batch Size</label><input type="range" id="inf-batch" min="1" max="24" value="1" step="1"/><span id="inf-batch-val">1</span></div>
+        </div>
+      </div>
+    </div>
 
-    <script>
-        document.getElementById('checkBtn').addEventListener('click', async () => {
-            const statusEl = document.getElementById('status');
-            statusEl.style.display = 'block';
-            statusEl.textContent = 'Checking...';
+    <div class="accordion" id="acc-inf-post">
+      <div class="accordion-header" onclick="toggleAccordion(this)">Post-process &amp; Output</div>
+      <div class="accordion-body">
+        <div class="row gap-md mb-md">
+          <div class="col"><label>Final Export Format</label><select id="inf-final-fmt"><option>WAV</option><option>MP3</option><option selected>FLAC</option><option>OGG</option><option>M4A</option></select></div>
+          <div class="col"><label>Change Instrumental Pitch</label><input type="range" id="inf-inst-pitch" min="-12" max="12" value="0" step="1"/><span id="inf-inst-pitch-val">0</span></div>
+          <div class="col"><label><input type="checkbox" id="inf-delete-audio" checked/> Delete Intermediate Audios</label></div>
+        </div>
+        <div class="row gap-md">
+          <div class="col"><label>Vocals Volume (dB)</label><input type="range" id="inf-vol-vocals" min="-10" max="0" value="-3" step="1"/><span id="inf-vol-vocals-val">-3</span></div>
+          <div class="col"><label>Instrumentals Volume (dB)</label><input type="range" id="inf-vol-inst" min="-10" max="0" value="-3" step="1"/><span id="inf-vol-inst-val">-3</span></div>
+          <div class="col"><label>Backing Vocals Volume (dB)</label><input type="range" id="inf-vol-back" min="-10" max="0" value="-3" step="1"/><span id="inf-vol-back-val">-3</span></div>
+        </div>
+      </div>
+    </div>
 
-            try {
-                const resp = await fetch('/info');
-                if (resp.ok) {
-                    const data = await resp.json();
-                    statusEl.textContent = 'Gradio API is running. API endpoints: ' +
-                        Object.keys(data.named_endpoints || {}).join(', ');
-                    statusEl.style.color = '#4ade80';
-                } else {
-                    statusEl.textContent = 'Gradio API returned status ' + resp.status;
-                    statusEl.style.color = '#f87171';
-                }
-            } catch (err) {
-                statusEl.textContent = 'Could not connect to Gradio backend: ' + err.message;
-                statusEl.style.color = '#f87171';
-            }
-        });
-    </script>
+    <div class="accordion" id="acc-inf-reverb">
+      <div class="accordion-header" onclick="toggleAccordion(this)">Reverb</div>
+      <div class="accordion-body">
+        <div class="mb-md"><label><input type="checkbox" id="inf-reverb"/> Enable Reverb</label></div>
+        <div id="reverb-params" style="display:none">
+          <div class="row gap-md mb-sm"><div class="col"><label>Room Size</label><input type="range" id="inf-rev-room" min="0" max="1" value="0.5" step="0.01"/><span id="inf-rev-room-val">0.5</span></div></div>
+          <div class="row gap-md mb-sm"><div class="col"><label>Damping</label><input type="range" id="inf-rev-damp" min="0" max="1" value="0.5" step="0.01"/><span id="inf-rev-damp-val">0.5</span></div></div>
+          <div class="row gap-md mb-sm"><div class="col"><label>Wet Gain</label><input type="range" id="inf-rev-wet" min="0" max="1" value="0.33" step="0.01"/><span id="inf-rev-wet-val">0.33</span></div></div>
+          <div class="row gap-md mb-sm"><div class="col"><label>Dry Gain</label><input type="range" id="inf-rev-dry" min="0" max="1" value="0.4" step="0.01"/><span id="inf-rev-dry-val">0.4</span></div></div>
+          <div class="row gap-md"><div class="col"><label>Width</label><input type="range" id="inf-rev-width" min="0" max="1" value="1" step="0.01"/><span id="inf-rev-width-val">1</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion" id="acc-inf-device">
+      <div class="accordion-header" onclick="toggleAccordion(this)">Device</div>
+      <div class="accordion-body">
+        <label>GPU Devices</label><input type="text" id="inf-devices" value="0"/>
+      </div>
+    </div>
+
+    <div style="margin-top:16px"><button class="btn btn-primary btn-lg" id="btn-convert" onclick="runFullInference()">Convert</button></div>
+  </div>
+
+  <!-- Quick Convert -->
+  <div class="tab-content" id="tab-inf-quick">
+    <div class="card">
+      <h3>Quick Convert (Batch)</h3>
+      <div class="row gap-md mb-md">
+        <div class="col"><label>Input Folder</label><input type="text" id="qc-input-folder"/></div>
+        <div class="col"><label>Output Folder</label><input type="text" id="qc-output-folder"/></div>
+      </div>
+      <div class="row gap-md mb-md">
+        <div class="col"><label>Export Format</label><select id="qc-export-fmt"><option>WAV</option><option>MP3</option><option selected>FLAC</option></select></div>
+        <div class="col"><label>Pitch</label><input type="range" id="qc-pitch" min="-24" max="24" value="0" step="1"/><span id="qc-pitch-val">0</span></div>
+        <div class="col"><label>Index Rate</label><input type="range" id="qc-index-rate" min="0" max="1" value="0.75" step="0.01"/><span id="qc-index-rate-val">0.75</span></div>
+      </div>
+      <div class="row gap-md mb-md">
+        <div class="col"><label>Filter Radius</label><input type="range" id="qc-filter-radius" min="0" max="7" value="3" step="1"/><span id="qc-filter-radius-val">3</span></div>
+        <div class="col"><label>RMS Mix Rate</label><input type="range" id="qc-rms" min="0" max="1" value="0.25" step="0.01"/><span id="qc-rms-val">0.25</span></div>
+        <div class="col"><label>Protect</label><input type="range" id="qc-protect" min="0" max="0.5" value="0.33" step="0.01"/><span id="qc-protect-val">0.33</span></div>
+      </div>
+      <div class="row gap-md mb-md">
+        <div class="col"><label>Pitch Extractor</label><select id="qc-f0"><option value="rmvpe" selected>rmvpe</option></select></div>
+        <div class="col"><label>Embedder</label><select id="qc-embedder"><option value="contentvec">contentvec</option></select></div>
+        <div class="col"><label><input type="checkbox" id="qc-split"/> Split Audio</label></div>
+        <div class="col"><label><input type="checkbox" id="qc-autotune"/> Autotune</label></div>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="runBatchConvert()">Batch Convert</button>
+      <div class="status-box mt-md" id="qc-status">Ready</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DOWNLOAD PAGE ═══════════════════ -->
+<div class="page" id="page-download">
+  <div class="tabs" id="dlTabs">
+    <button class="tab-btn active" data-tab="dl-model">Download Model</button>
+    <button class="tab-btn" data-tab="dl-music">Download Music</button>
+  </div>
+  <div class="tab-content active" id="tab-dl-model">
+    <div class="card">
+      <h3>Download Voice Model</h3>
+      <div class="row gap-md mb-md">
+        <div class="col-3"><label>Model URL</label><input type="text" id="dl-model-url" placeholder="Paste model URL..."/></div>
+        <div class="col-2"><label>Download Method</label><select id="dl-method"></select></div>
+      </div>
+      <div class="row gap-sm mb-md">
+        <button class="btn btn-primary" onclick="downloadModel()">Download</button>
+        <button class="btn" onclick="autoDetectMethod()">Auto-detect Method</button>
+      </div>
+      <div class="status-box mb-lg" id="dl-model-status">Ready</div>
+      <h3>Drop Files</h3>
+      <p class="info mb-sm">Drag your .pth file and .index file into the box below.</p>
+      <div class="drop-zone" id="dl-drop-zone">Drop .pth or .index files here, or click to browse<input type="file" id="dl-file-input" style="display:none" accept=".pth,.index"/></div>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-dl-music">
+    <div class="card">
+      <h3>Download Music</h3>
+      <div class="row gap-md mb-md"><div class="col"><label>Music URL</label><input type="text" id="dl-music-url" placeholder="YouTube or other URL..."/></div></div>
+      <button class="btn btn-primary" onclick="downloadMusic()">Download</button>
+      <div class="status-box mt-md" id="dl-music-status">Ready</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TTS PAGE ═══════════════════ -->
+<div class="page" id="page-tts">
+  <div class="card">
+    <h3>Text-to-Speech</h3>
+    <div class="mb-md"><label>Text to Synthesize</label><textarea id="tts-text" rows="4" placeholder="Enter your text here..." maxlength="5000"></textarea></div>
+    <div class="row gap-md mb-md">
+      <div class="col-2"><label>Language</label><select id="tts-language"></select></div>
+      <div class="col-2"><label>Voice</label><select id="tts-voice"></select></div>
+      <div class="col"><label>Speech Rate</label><select id="tts-rate"></select></div>
+    </div>
+    <div class="accordion" id="acc-tts-rvc">
+      <div class="accordion-header" onclick="toggleAccordion(this)">RVC Voice Conversion (Optional)</div>
+      <div class="accordion-body">
+        <div class="mb-md"><label><input type="checkbox" id="tts-use-rvc"/> Enable RVC Voice Conversion</label></div>
+        <div id="tts-rvc-settings" style="display:none">
+          <div class="row gap-md mb-md">
+            <div class="col"><label>Voice Model</label><select id="tts-model"></select></div>
+            <div class="col"><label>Index File</label><select id="tts-index"></select></div>
+          </div>
+          <div class="row gap-md mb-md">
+            <div class="col"><label>Pitch</label><input type="range" id="tts-pitch" min="-12" max="12" value="0" step="1"/><span id="tts-pitch-val">0</span></div>
+            <div class="col"><label>Pitch Extractor</label><select id="tts-f0"><option value="rmvpe">rmvpe</option></select></div>
+            <div class="col"><label>Filter Radius</label><input type="range" id="tts-filter-radius" min="0" max="7" value="3" step="1"/><span id="tts-filter-radius-val">3</span></div>
+          </div>
+          <div class="row gap-md">
+            <div class="col"><label>Index Rate</label><input type="range" id="tts-index-rate" min="0" max="1" value="0.75" step="0.05"/><span id="tts-index-rate-val">0.75</span></div>
+            <div class="col"><label>RMS Mix Rate</label><input type="range" id="tts-rms" min="0" max="1" value="0.25" step="0.05"/><span id="tts-rms-val">0.25</span></div>
+            <div class="col"><label>Protect</label><input type="range" id="tts-protect" min="0" max="0.5" value="0.33" step="0.05"/><span id="tts-protect-val">0.33</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row gap-sm mb-md">
+      <button class="btn btn-primary btn-lg" onclick="generateTTS()">Generate TTS</button>
+      <button class="btn btn-danger" onclick="clearTTS()">Clear</button>
+    </div>
+    <div class="status-box mb-md" id="tts-status">Ready</div>
+    <div class="row gap-md">
+      <div class="col"><label>TTS Audio (Before RVC)</label><audio id="tts-audio-out" controls style="display:none"></audio></div>
+      <div class="col"><label>Final Audio (After RVC)</label><audio id="tts-rvc-audio-out" controls style="display:none"></audio></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ WHISPER PAGE ═══════════════════ -->
+<div class="page" id="page-whisper">
+  <div class="card">
+    <h3>Whisper Transcription</h3>
+    <div class="row gap-md mb-md">
+      <div class="col-2"><label>Model Size</label><select id="wh-model"></select></div>
+      <div class="col"><label>Device</label><select id="wh-device"></select></div>
+    </div>
+    <div class="mb-md"><label>Upload Audio</label><input type="file" id="wh-audio" accept="audio/*"/></div>
+    <div class="accordion" id="acc-wh-settings">
+      <div class="accordion-header" onclick="toggleAccordion(this)">Transcription Settings</div>
+      <div class="accordion-body">
+        <div class="row gap-md mb-md">
+          <div class="col"><label>Language</label><select id="wh-lang"><option value="">Auto-detect</option><option value="en">English</option><option value="zh">Chinese</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="fr">French</option><option value="de">German</option><option value="es">Spanish</option><option value="ru">Russian</option><option value="id">Indonesian</option></select></div>
+          <div class="col"><label>Output Format</label><select id="wh-format"><option value="txt">Plain Text</option><option value="json">JSON</option><option value="srt">SRT</option><option value="vtt">VTT</option></select></div>
+        </div>
+        <label><input type="checkbox" id="wh-word-ts" checked/> Word Timestamps</label>
+      </div>
+    </div>
+    <div class="row gap-sm mb-md">
+      <button class="btn btn-primary btn-lg" onclick="transcribeAudio()">Transcribe Audio</button>
+      <button class="btn btn-danger" onclick="clearWhisper()">Clear</button>
+    </div>
+    <div class="status-box mb-md" id="wh-status">Ready</div>
+    <div class="output-text" id="wh-output" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ACE-STEP PAGE ═══════════════════ -->
+<div class="page" id="page-acestep">
+  <div class="tabs" id="aceTabs">
+    <button class="tab-btn active" data-tab="ace-setup">Model Setup</button>
+    <button class="tab-btn" data-tab="ace-generate">Generate</button>
+  </div>
+  <div class="tab-content active" id="tab-ace-setup">
+    <div class="card">
+      <h3>ACE-Step Model Setup</h3>
+      <div class="row gap-md mb-md">
+        <div class="col"><label>DiT Model</label><select id="ace-dit"><option>acestep-v15-turbo</option><option>acestep-v15-sft</option><option>acestep-v15-base</option></select></div>
+        <div class="col"><label>LM Model</label><select id="ace-lm"><option>acestep-v15-lm</option></select></div>
+      </div>
+      <div class="row gap-md mb-md">
+        <div class="col"><label><input type="checkbox" id="ace-use-lm" checked/> Enable LM</label></div>
+        <div class="col"><label>LM Backend</label><select id="ace-lm-backend"><option>pytorch</option><option>vllm</option></select></div>
+        <div class="col"><label>Device</label><select id="ace-device"><option>auto</option><option>cuda</option><option>cpu</option></select></div>
+      </div>
+      <div class="row gap-sm mb-md">
+        <button class="btn btn-primary" onclick="acestepLoad()">Load Models</button>
+        <button class="btn btn-danger" onclick="acestepUnload()">Unload Models</button>
+      </div>
+      <div class="status-box" id="ace-model-status">No models loaded.</div>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-ace-generate">
+    <div class="card">
+      <h3>Generate Music</h3>
+      <div class="mb-md"><label>Mode</label><select id="ace-mode" onchange="aceToggleMode()"><option>Simple</option><option>Custom</option><option>Cover</option><option>Repaint</option></select></div>
+      <div id="ace-simple">
+        <div class="mb-md"><label>Describe the Music</label><textarea id="ace-query" rows="3" placeholder="e.g. A soft love song for a quiet evening"></textarea></div>
+        <div class="row gap-md"><div class="col"><label>Vocal Language</label><select id="ace-simple-lang"><option value="en">English</option><option value="zh">Chinese</option><option value="ja">Japanese</option><option value="ko">Korean</option></select></div></div>
+      </div>
+      <div id="ace-custom" style="display:none">
+        <div class="mb-md"><label>Caption / Description</label><input type="text" id="ace-caption" placeholder="upbeat electronic dance music..."/></div>
+        <div class="mb-md"><label>Lyrics</label><textarea id="ace-lyrics" rows="4" placeholder="[Verse 1]&#10;Hello world..."></textarea></div>
+        <div class="row gap-md mb-md">
+          <div class="col"><label><input type="checkbox" id="ace-instrumental"/> Instrumental</label></div>
+          <div class="col"><label>Vocal Language</label><select id="ace-vocal-lang"><option value="en">English</option><option value="zh">Chinese</option></select></div>
+        </div>
+        <div id="ace-src-audio" style="display:none" class="mb-md"><label>Source Audio</label><input type="file" id="ace-src-file" accept="audio/*"/></div>
+        <div id="ace-repaint-params" style="display:none" class="row gap-md mb-md">
+          <div class="col"><label>Repaint Start (s)</label><input type="number" id="ace-repaint-start" value="0" step="0.1"/></div>
+          <div class="col"><label>Repaint End (s)</label><input type="number" id="ace-repaint-end" value="-1" step="0.1"/></div>
+        </div>
+        <div id="ace-cover-strength" style="display:none" class="mb-md"><label>Cover Strength</label><input type="range" id="ace-cover-str" min="0" max="1" value="0.8" step="0.05"/><span id="ace-cover-str-val">0.8</span></div>
+      </div>
+      <div class="accordion" id="acc-ace-adv">
+        <div class="accordion-header" onclick="toggleAccordion(this)">Advanced Settings</div>
+        <div class="accordion-body">
+          <div class="row gap-md mb-md">
+            <div class="col"><label>Inference Steps</label><input type="range" id="ace-steps" min="1" max="100" value="8" step="1"/><span id="ace-steps-val">8</span></div>
+            <div class="col"><label>Guidance Scale</label><input type="range" id="ace-guidance" min="1" max="20" value="3" step="0.5"/><span id="ace-guidance-val">3</span></div>
+            <div class="col"><label>Seed</label><input type="number" id="ace-seed" value="-1"/></div>
+          </div>
+          <div class="row gap-md">
+            <div class="col"><label>Duration (s)</label><input type="range" id="ace-duration" min="10" max="600" value="30" step="1"/><span id="ace-duration-val">30</span></div>
+            <div class="col"><label>Output Format</label><select id="ace-format"><option>wav</option><option>mp3</option><option>flac</option></select></div>
+          </div>
+        </div>
+      </div>
+      <div class="row gap-sm mb-md mt-md">
+        <button class="btn btn-primary btn-lg" onclick="acestepGenerate()">Generate Music</button>
+        <button class="btn btn-danger" onclick="acestepClear()">Clear</button>
+      </div>
+      <div class="status-box mb-md" id="ace-status">Ready</div>
+      <audio id="ace-audio-out" controls style="display:none"></audio>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SETTINGS PAGE ═══════════════════ -->
+<div class="page" id="page-settings">
+  <div class="tabs" id="setTabs">
+    <button class="tab-btn active" data-tab="set-theme">Theme Editor</button>
+    <button class="tab-btn" data-tab="set-lang">Language</button>
+    <button class="tab-btn" data-tab="set-about">About</button>
+    <button class="tab-btn" data-tab="set-actions">Actions</button>
+  </div>
+
+  <!-- Theme Editor -->
+  <div class="tab-content active" id="tab-set-theme">
+    <div class="card">
+      <h3>Custom Theme Editor</h3>
+      <p class="info mb-md">Design your own visual theme. Changes apply live. Click Apply Theme to save for next restart.</p>
+      <div class="row gap-md mb-lg">
+        <div class="col"><label>Button Style Preset</label><select id="te-preset" onchange="applyPreset(this.value)"><option value="flat">Flat</option><option value="rounded" selected>Rounded</option><option value="pill">Pill</option><option value="material">Material</option><option value="outline">Outline</option></select></div>
+        <div class="col"><label>Saved Themes</label><select id="te-saved"></select></div>
+        <button class="btn" onclick="loadSavedTheme()">Load</button>
+        <button class="btn btn-danger" onclick="deleteSavedTheme()">Delete</button>
+        <button class="btn" onclick="refreshSavedThemes()">Refresh</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Background Colors</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Primary Background</label><input type="color" data-var="--bg-primary" value="#0D0B12" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Secondary Background</label><input type="color" data-var="--bg-secondary" value="#12101A" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Block Background</label><input type="color" data-var="--bg-block" value="#16131F" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Input Background</label><input type="color" data-var="--bg-input" value="#12101A" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Input Hover</label><input type="color" data-var="--bg-input-hover" value="#1A1628" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Label Background</label><input type="color" data-var="--bg-label" value="#1E1B2E" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Title Background</label><input type="color" data-var="--bg-title" value="#1E1B2E" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Text Colors</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Body Text</label><input type="color" data-var="--text-body" value="#E8E6F0" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Subdued Text</label><input type="color" data-var="--text-subdued" value="#8B87A0" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Placeholder</label><input type="color" data-var="--text-placeholder" value="#5B5775" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Label Text</label><input type="color" data-var="--text-label" value="#a5b4fc" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Title Text</label><input type="color" data-var="--text-title" value="#a5b4fc" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Primary Accent</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Primary 300</label><input type="color" data-var="--primary-300" value="#a5b4fc" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Primary 400</label><input type="color" data-var="--primary-400" value="#818cf8" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Primary 500</label><input type="color" data-var="--primary-500" value="#6366f1" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Primary 600</label><input type="color" data-var="--primary-600" value="#4f46e5" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Secondary Accent</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Secondary 500</label><input type="color" data-var="--secondary-500" value="#8b5cf6" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Secondary 600</label><input type="color" data-var="--secondary-600" value="#7c3aed" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Border Colors</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Primary Border</label><input type="color" data-var="--border-primary" value="#1E1B2E" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Accent Border</label><input type="color" data-var="--border-accent" value="#4f46e5" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Input Border</label><input type="color" data-var="--border-input" value="#2A2640" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Input Border Hover</label><input type="color" data-var="--border-input-hover" value="#71717a" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Button Colors</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Primary Button BG</label><input type="color" data-var="--btn-primary-bg" value="#4f46e5" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Primary Button Hover</label><input type="color" data-var="--btn-primary-bg-hover" value="#6366f1" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Primary Button Text</label><input type="color" data-var="--btn-primary-text" value="#ffffff" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Secondary Button BG</label><input type="color" data-var="--btn-secondary-bg" value="#12101A" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Secondary Button Hover</label><input type="color" data-var="--btn-secondary-bg-hover" value="#27272a" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Secondary Button Text</label><input type="color" data-var="--btn-secondary-text" value="#E8E6F0" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Cancel Button BG</label><input type="color" data-var="--btn-cancel-bg" value="#27272a" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Cancel Button Hover</label><input type="color" data-var="--btn-cancel-bg-hover" value="#3f3f46" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Slider &amp; Checkbox</h4>
+      <div class="color-grid">
+        <div class="color-item"><label>Slider Color</label><input type="color" data-var="--slider-color" value="#8B5CF6" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Checkbox BG</label><input type="color" data-var="--checkbox-bg" value="#2A2640" onchange="liveThemeUpdate(this)"/></div>
+        <div class="color-item"><label>Checkbox Selected</label><input type="color" data-var="--checkbox-selected" value="#7c3aed" onchange="liveThemeUpdate(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Border Radius</h4>
+      <div class="row gap-md">
+        <div class="col"><label>Small</label><input type="text" id="te-radius-sm" value="4px" data-var="--radius-sm" onchange="liveThemeUpdateText(this)"/></div>
+        <div class="col"><label>Medium</label><input type="text" id="te-radius-md" value="8px" data-var="--radius-md" onchange="liveThemeUpdateText(this)"/></div>
+        <div class="col"><label>Large</label><input type="text" id="te-radius-lg" value="12px" data-var="--radius-lg" onchange="liveThemeUpdateText(this)"/></div>
+        <div class="col"><label>Extra Large</label><input type="text" id="te-radius-xl" value="16px" data-var="--radius-xl" onchange="liveThemeUpdateText(this)"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Save &amp; Apply</h4>
+      <div class="row gap-md mb-md">
+        <div class="col-3"><label>Theme Name</label><input type="text" id="te-name" value="My Custom Theme"/></div>
+      </div>
+      <div class="row gap-sm">
+        <button class="btn btn-primary" onclick="applyTheme()">Apply Theme</button>
+        <button class="btn" onclick="saveTheme()">Save Theme</button>
+        <button class="btn btn-danger" onclick="resetTheme()">Reset to Default</button>
+      </div>
+      <div class="status-box mt-md" id="te-status">Ready</div>
+    </div>
+  </div>
+
+  <!-- Language -->
+  <div class="tab-content" id="tab-set-lang">
+    <div class="card">
+      <h3>Language</h3>
+      <div class="row gap-md mb-md">
+        <div class="col-3"><label>Select Language</label><select id="set-language"></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveLanguage()">Save Language</button>
+      <div class="status-box mt-md" id="set-lang-status">Ready</div>
+    </div>
+  </div>
+
+  <!-- About -->
+  <div class="tab-content" id="tab-set-about">
+    <div class="card" style="text-align:center">
+      <h1 style="font-size:2.2em;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Hyper-RVC WebUI</h1>
+      <p style="color:#888;font-size:0.95em">Version 2.0.0 — Custom Static Front-End + Gradio Server Backend</p>
+      <p style="color:#aaa;max-width:650px;margin:12px auto">An autonomous pipeline to create covers with any RVC v2 trained AI voice from YouTube videos or a local audio file.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px">
+        <a href="https://github.com/BF667/Hyper-RVC" target="_blank" style="text-decoration:none;padding:6px 16px;border-radius:8px;background:#24292e;color:#fff;font-size:0.85em">GitHub</a>
+        <a href="https://huggingface.co/blog/introducing-gradio-server" target="_blank" style="text-decoration:none;padding:6px 16px;border-radius:8px;background:#ffbd45;color:#000;font-size:0.85em">Gradio Server Docs</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="tab-content" id="tab-set-actions">
+    <div class="card">
+      <h3>Reset All Settings</h3>
+      <p class="info mb-md">This will reset all settings to their defaults.</p>
+      <button class="btn btn-danger btn-lg" onclick="resetAllSettings()">Reset All Settings to Defaults</button>
+      <div class="status-box mt-md" id="set-action-status">Ready</div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- end .content -->
+</div><!-- end .main -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div></div>
+
+<script type="module">
+import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+
+// ─── Globals ──────────────────────────────────────────
+let gradioClient = null;
+
+async function initClient() {
+  try {
+    gradioClient = await Client.connect(window.location.origin);
+    console.log("Gradio client connected");
+    await loadInitialData();
+  } catch(e) {
+    console.error("Failed to connect to Gradio:", e);
+    toast("Failed to connect to Gradio backend", "error");
+  }
+}
+
+async function api(endpoint, params = {}) {
+  if (!gradioClient) { toast("Not connected to backend", "error"); return null; }
+  try {
+    const result = await gradioClient.predict("/" + endpoint, params);
+    return result.data;
+  } catch(e) {
+    console.error(`API call /${endpoint} failed:`, e);
+    toast(`API error: ${e.message}`, "error");
+    return null;
+  }
+}
+
+// ─── Toast ─────────────────────────────────────────────
+function toast(msg, type = "info") {
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.textContent = msg;
+  document.getElementById("toastContainer").appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function showLoading() { document.getElementById("loadingOverlay").classList.add("show"); }
+function hideLoading() { document.getElementById("loadingOverlay").classList.remove("show"); }
+
+// ─── Navigation ────────────────────────────────────────
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    item.classList.add("active");
+    document.getElementById("page-" + item.dataset.page).classList.add("active");
+    document.getElementById("pageTitle").textContent = item.textContent.trim();
+  });
+});
+
+// ─── Tabs ──────────────────────────────────────────────
+document.querySelectorAll(".tabs").forEach(tabBar => {
+  tabBar.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const parent = tabBar.parentElement;
+      tabBar.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      parent.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      parent.querySelector("#tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+});
+
+// ─── Accordion ─────────────────────────────────────────
+window.toggleAccordion = function(header) {
+  header.parentElement.classList.toggle("open");
+};
+
+// ─── Slider value display ──────────────────────────────
+document.querySelectorAll('input[type="range"]').forEach(slider => {
+  const valSpan = document.getElementById(slider.id + "-val");
+  if (valSpan) {
+    slider.addEventListener("input", () => { valSpan.textContent = slider.value; });
+  }
+});
+
+// ─── Checkbox toggles ─────────────────────────────────
+document.getElementById("inf-reverb").addEventListener("change", e => {
+  document.getElementById("reverb-params").style.display = e.target.checked ? "block" : "none";
+});
+document.getElementById("tts-use-rvc").addEventListener("change", e => {
+  document.getElementById("tts-rvc-settings").style.display = e.target.checked ? "block" : "none";
+});
+
+// ─── File drop zone ────────────────────────────────────
+const dropZone = document.getElementById("dl-drop-zone");
+const fileInput = document.getElementById("dl-file-input");
+dropZone.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("dragover"); uploadModelFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener("change", e => { if (e.target.files[0]) uploadModelFile(e.target.files[0]); });
+
+// ─── ACE-Step mode toggle ──────────────────────────────
+window.aceToggleMode = function() {
+  const mode = document.getElementById("ace-mode").value;
+  document.getElementById("ace-simple").style.display = mode === "Simple" ? "block" : "none";
+  document.getElementById("ace-custom").style.display = mode !== "Simple" ? "block" : "none";
+  document.getElementById("ace-src-audio").style.display = (mode === "Cover" || mode === "Repaint") ? "block" : "none";
+  document.getElementById("ace-repaint-params").style.display = mode === "Repaint" ? "flex" : "none";
+  document.getElementById("ace-cover-strength").style.display = mode === "Cover" ? "block" : "none";
+};
+
+// ═══════════════════════════════════════════════════════
+// Load initial data from backend
+// ═══════════════════════════════════════════════════════
+async function loadInitialData() {
+  // Models & indexes
+  const models = await api("get_models");
+  if (models) populateSelect("inf-model", models, models[0] || "");
+  const indexes = await api("get_indexes");
+  if (indexes) populateSelect("inf-index", indexes, indexes[0] || "");
+  const audios = await api("get_audio_files");
+  if (audios) populateSelect("inf-audio-select", audios, audios[0] || "");
+
+  // Separation models
+  const sepModels = await api("get_separation_models");
+  if (sepModels) {
+    populateSelect("inf-vocal-model", sepModels.vocals, sepModels.vocals[0]);
+    populateSelect("inf-karaoke-model", sepModels.karaoke, sepModels.karaoke[0]);
+    populateSelect("inf-dereverb-model", sepModels.dereverb, sepModels.dereverb[0]);
+    populateSelect("inf-deecho-model", sepModels.deecho, sepModels.deecho[0]);
+    populateSelect("inf-denoise-model", sepModels.denoise, sepModels.denoise[0]);
+  }
+
+  // F0 methods & embedders
+  const f0 = await api("get_f0_methods");
+  if (f0) { populateSelect("inf-f0", f0, "rmvpe"); populateSelect("qc-f0", f0, "rmvpe"); populateSelect("tts-f0", f0, "rmvpe"); }
+  const embedders = await api("get_embedder_models");
+  if (embedders) { populateSelect("inf-embedder", embedders, "contentvec"); populateSelect("qc-embedder", embedders, "contentvec"); }
+
+  // GPUs
+  const gpus = await api("get_gpus");
+  if (gpus) document.getElementById("inf-devices").value = gpus;
+
+  // Download methods
+  const dlMethods = await api("get_download_methods");
+  if (dlMethods) {
+    const sel = document.getElementById("dl-method");
+    sel.innerHTML = "";
+    for (const [k, v] of Object.entries(dlMethods)) {
+      const opt = document.createElement("option"); opt.value = k; opt.textContent = `${k} (${v})`; sel.appendChild(opt);
+    }
+  }
+
+  // TTS voices
+  const ttsData = await api("get_tts_voices_data");
+  if (ttsData) {
+    const langSel = document.getElementById("tts-language");
+    langSel.innerHTML = "";
+    for (const lang of Object.keys(ttsData.voices)) {
+      const opt = document.createElement("option"); opt.value = lang; opt.textContent = lang; langSel.appendChild(opt);
+    }
+    populateSelect("tts-voice", ttsData.voices["English (US)"], "en-US-JennyNeural");
+    const rateSel = document.getElementById("tts-rate");
+    rateSel.innerHTML = "";
+    for (const r of Object.keys(ttsData.rate_options)) {
+      const opt = document.createElement("option"); opt.value = r; opt.textContent = r; rateSel.appendChild(opt);
+    }
+    langSel.addEventListener("change", async () => {
+      const voices = ttsData.voices[langSel.value] || [];
+      populateSelect("tts-voice", voices, voices[0]);
+    });
+    // Also populate TTS model/index dropdowns
+    const ttsModels = await api("get_models");
+    if (ttsModels) populateSelect("tts-model", ttsModels, ttsModels[0] || "");
+    const ttsIndexes = await api("get_indexes");
+    if (ttsIndexes) populateSelect("tts-index", ttsIndexes, ttsIndexes[0] || "");
+  }
+
+  // Whisper
+  const whModels = await api("get_whisper_models");
+  if (whModels) {
+    const sel = document.getElementById("wh-model");
+    sel.innerHTML = "";
+    for (const [k, v] of Object.entries(whModels)) {
+      const opt = document.createElement("option"); opt.value = k; opt.textContent = `${k} — ${v}`; sel.appendChild(opt);
+    }
+    sel.value = "large-v3";
+  }
+  const whDevices = await api("get_available_devices");
+  if (whDevices) populateSelect("wh-device", whDevices, whDevices.includes("cuda") ? "cuda" : "cpu");
+
+  // Saved themes
+  await refreshSavedThemes();
+
+  // Languages
+  const langs = await api("get_languages");
+  if (langs && langs.length) {
+    const sel = document.getElementById("set-language");
+    sel.innerHTML = "";
+    for (const [name, code] of langs) {
+      const opt = document.createElement("option"); opt.value = code; opt.textContent = name; sel.appendChild(opt);
+    }
+  }
+
+  // ACE-Step defaults
+  const aceDefaults = await api("acestep_get_defaults");
+  if (aceDefaults) {
+    if (aceDefaults.dit_model) document.getElementById("ace-dit").value = aceDefaults.dit_model;
+    if (aceDefaults.inference_steps) { document.getElementById("ace-steps").value = aceDefaults.inference_steps; document.getElementById("ace-steps-val").textContent = aceDefaults.inference_steps; }
+    if (aceDefaults.guidance_scale) { document.getElementById("ace-guidance").value = aceDefaults.guidance_scale; document.getElementById("ace-guidance-val").textContent = aceDefaults.guidance_scale; }
+  }
+
+  // Apply active theme CSS
+  const themeCss = await api("get_theme_css");
+  if (themeCss) {
+    const style = document.createElement("style");
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+  }
+}
+
+function populateSelect(id, items, defaultVal) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = "";
+  for (const item of items) {
+    const opt = document.createElement("option"); opt.value = item; opt.textContent = item; sel.appendChild(opt);
+  }
+  if (defaultVal) sel.value = defaultVal;
+}
+
+// ─── Inference ─────────────────────────────────────────
+window.inferenceRefresh = async function() {
+  const models = await api("get_models");
+  if (models) populateSelect("inf-model", models, models[0] || "");
+  const indexes = await api("get_indexes");
+  if (indexes) populateSelect("inf-index", indexes, indexes[0] || "");
+  const audios = await api("get_audio_files");
+  if (audios) populateSelect("inf-audio-select", audios, audios[0] || "");
+  toast("Refreshed models, indexes, and audio files", "success");
+};
+
+window.inferenceUnload = function() {
+  document.getElementById("inf-model").value = "";
+  document.getElementById("inf-index").value = "";
+};
+
+document.getElementById("inf-model").addEventListener("change", async function() {
+  const idx = await api("match_index", { model_path: this.value });
+  if (idx) document.getElementById("inf-index").value = idx;
+});
+
+window.runFullInference = async function() {
+  showLoading();
+  document.getElementById("inf-status").textContent = "Processing...";
+  const params = {
+    model_path: document.getElementById("inf-model").value,
+    index_path: document.getElementById("inf-index").value,
+    input_audio_path: document.getElementById("inf-audio-select").value,
+    export_format_rvc: document.getElementById("inf-export-fmt").value,
+    split_audio: document.getElementById("inf-split").checked,
+    autotune: document.getElementById("inf-autotune").checked,
+    sid: parseInt(document.getElementById("inf-sid").value) || 0,
+    pitch: parseInt(document.getElementById("inf-pitch").value),
+    filter_radius: parseInt(document.getElementById("inf-filter-radius").value),
+    index_rate: parseFloat(document.getElementById("inf-index-rate").value),
+    rms_mix_rate: parseFloat(document.getElementById("inf-rms").value),
+    protect: parseFloat(document.getElementById("inf-protect").value),
+    pitch_extract: document.getElementById("inf-f0").value,
+    embedder_model: document.getElementById("inf-embedder").value,
+    vocal_model: document.getElementById("inf-vocal-model").value,
+    karaoke_model: document.getElementById("inf-karaoke-model").value,
+    dereverb_model: document.getElementById("inf-dereverb-model").value,
+    deecho: document.getElementById("inf-deecho").checked,
+    deecho_model: document.getElementById("inf-deecho-model").value,
+    denoise: document.getElementById("inf-denoise").checked,
+    denoise_model: document.getElementById("inf-denoise-model").value,
+    use_tta: document.getElementById("inf-tta").checked,
+    batch_size: parseInt(document.getElementById("inf-batch").value),
+    export_format_final: document.getElementById("inf-final-fmt").value,
+    change_inst_pitch: parseInt(document.getElementById("inf-inst-pitch").value),
+    delete_audios: document.getElementById("inf-delete-audio").checked,
+    vocals_volume: parseInt(document.getElementById("inf-vol-vocals").value),
+    instrumentals_volume: parseInt(document.getElementById("inf-vol-inst").value),
+    backing_vocals_volume: parseInt(document.getElementById("inf-vol-back").value),
+    reverb: document.getElementById("inf-reverb").checked,
+    reverb_room_size: parseFloat(document.getElementById("inf-rev-room").value),
+    reverb_damping: parseFloat(document.getElementById("inf-rev-damp").value),
+    reverb_wet_gain: parseFloat(document.getElementById("inf-rev-wet").value),
+    reverb_dry_gain: parseFloat(document.getElementById("inf-rev-dry").value),
+    reverb_width: parseFloat(document.getElementById("inf-rev-width").value),
+    devices: document.getElementById("inf-devices").value,
+  };
+  const result = await api("full_inference", { params });
+  hideLoading();
+  if (result) {
+    document.getElementById("inf-status").textContent = result.status || "Done";
+    if (result.output_file) {
+      const audioEl = document.getElementById("inf-output-audio");
+      audioEl.src = `/file=${result.output_file}`;
+      audioEl.style.display = "block";
+      toast("Conversion complete!", "success");
+    }
+  } else {
+    document.getElementById("inf-status").textContent = "Error occurred";
+  }
+};
+
+window.runBatchConvert = async function() {
+  showLoading();
+  document.getElementById("qc-status").textContent = "Processing...";
+  const params = {
+    model_path: document.getElementById("inf-model").value,
+    index_path: document.getElementById("inf-index").value,
+    input_folder: document.getElementById("qc-input-folder").value,
+    output_folder: document.getElementById("qc-output-folder").value,
+    export_format: document.getElementById("qc-export-fmt").value,
+    pitch: parseInt(document.getElementById("qc-pitch").value),
+    filter_radius: parseInt(document.getElementById("qc-filter-radius").value),
+    index_rate: parseFloat(document.getElementById("qc-index-rate").value),
+    rms_mix_rate: parseFloat(document.getElementById("qc-rms").value),
+    protect: parseFloat(document.getElementById("qc-protect").value),
+    pitch_extract: document.getElementById("qc-f0").value,
+    embedder_model: document.getElementById("qc-embedder").value,
+    split_audio: document.getElementById("qc-split").checked,
+    autotune: document.getElementById("qc-autotune").checked,
+  };
+  const result = await api("batch_convert", { params });
+  hideLoading();
+  document.getElementById("qc-status").textContent = result || "Done";
+};
+
+// ─── Download ──────────────────────────────────────────
+window.downloadModel = async function() {
+  showLoading();
+  document.getElementById("dl-model-status").textContent = "Downloading...";
+  const url = document.getElementById("dl-model-url").value;
+  const method = document.getElementById("dl-method").value.split(" ")[0];
+  const result = await api("download_model", { url, method });
+  hideLoading();
+  document.getElementById("dl-model-status").textContent = result || "Done";
+};
+
+window.autoDetectMethod = async function() {
+  const url = document.getElementById("dl-model-url").value;
+  const result = await api("detect_download_method", { url });
+  if (result) {
+    document.getElementById("dl-method").value = result;
+    toast("Method detected: " + result, "info");
+  }
+};
+
+window.downloadMusic = async function() {
+  showLoading();
+  document.getElementById("dl-music-status").textContent = "Downloading...";
+  const result = await api("download_music", { url: document.getElementById("dl-music-url").value });
+  hideLoading();
+  document.getElementById("dl-music-status").textContent = result || "Done";
+};
+
+async function uploadModelFile(file) {
+  if (!file) return;
+  showLoading();
+  const result = await api("upload_model_file", { file_data: handle_file(file) });
+  hideLoading();
+  toast(result || "File uploaded", result && result.startsWith("Error") ? "error" : "success");
+}
+
+// ─── TTS ───────────────────────────────────────────────
+window.generateTTS = async function() {
+  showLoading();
+  document.getElementById("tts-status").textContent = "Generating...";
+  const params = {
+    text: document.getElementById("tts-text").value,
+    language: document.getElementById("tts-language").value,
+    voice: document.getElementById("tts-voice").value,
+    rate: document.getElementById("tts-rate").value,
+    use_rvc: document.getElementById("tts-use-rvc").checked,
+    model_path: document.getElementById("tts-model").value,
+    index_path: document.getElementById("tts-index").value,
+    pitch: parseInt(document.getElementById("tts-pitch").value),
+    pitch_extract: document.getElementById("tts-f0").value,
+    filter_radius: parseInt(document.getElementById("tts-filter-radius").value),
+    index_rate: parseFloat(document.getElementById("tts-index-rate").value),
+    rms_mix_rate: parseFloat(document.getElementById("tts-rms").value),
+    protect: parseFloat(document.getElementById("tts-protect").value),
+    embedder_model: "contentvec",
+    devices: "0",
+    export_format: "WAV",
+  };
+  const result = await api("tts_generate", { params });
+  hideLoading();
+  if (result) {
+    document.getElementById("tts-status").textContent = result.status || "Done";
+    if (result.tts_audio) {
+      const el = document.getElementById("tts-audio-out");
+      el.src = `/file=${result.tts_audio}`; el.style.display = "block";
+    }
+    if (result.rvc_audio) {
+      const el = document.getElementById("tts-rvc-audio-out");
+      el.src = `/file=${result.rvc_audio}`; el.style.display = "block";
+    }
+  }
+};
+
+window.clearTTS = function() {
+  document.getElementById("tts-text").value = "";
+  document.getElementById("tts-status").textContent = "Ready";
+  document.getElementById("tts-audio-out").style.display = "none";
+  document.getElementById("tts-rvc-audio-out").style.display = "none";
+};
+
+// ─── Whisper ───────────────────────────────────────────
+window.transcribeAudio = async function() {
+  showLoading();
+  document.getElementById("wh-status").textContent = "Transcribing...";
+  const audioFile = document.getElementById("wh-audio").files[0];
+  if (!audioFile) { toast("Please upload an audio file", "error"); hideLoading(); return; }
+  const uploaded = await api("upload_audio", { file_data: handle_file(audioFile) });
+  if (!uploaded) { hideLoading(); return; }
+  const params = {
+    audio_path: uploaded,
+    model_size: document.getElementById("wh-model").value,
+    device: document.getElementById("wh-device").value,
+    language: document.getElementById("wh-lang").value,
+    word_timestamps: document.getElementById("wh-word-ts").checked,
+    output_format: document.getElementById("wh-format").value,
+  };
+  const result = await api("whisper_transcribe", { params });
+  hideLoading();
+  if (result) {
+    document.getElementById("wh-status").textContent = result.status || "Done";
+    const out = document.getElementById("wh-output");
+    out.textContent = result.transcription || "";
+    out.style.display = result.transcription ? "block" : "none";
+  }
+};
+
+window.clearWhisper = function() {
+  document.getElementById("wh-status").textContent = "Ready";
+  document.getElementById("wh-output").style.display = "none";
+};
+
+// ─── ACE-Step ──────────────────────────────────────────
+window.acestepLoad = async function() {
+  showLoading();
+  document.getElementById("ace-model-status").textContent = "Loading models...";
+  const params = {
+    dit_model: document.getElementById("ace-dit").value,
+    lm_model: document.getElementById("ace-lm").value,
+    use_lm: document.getElementById("ace-use-lm").checked,
+    lm_backend: document.getElementById("ace-lm-backend").value,
+    device: document.getElementById("ace-device").value,
+  };
+  const result = await api("acestep_load_models", { params });
+  hideLoading();
+  document.getElementById("ace-model-status").textContent = result || "Done";
+};
+
+window.acestepUnload = async function() {
+  const result = await api("acestep_unload_models");
+  document.getElementById("ace-model-status").textContent = result || "Unloaded";
+};
+
+window.acestepGenerate = async function() {
+  showLoading();
+  document.getElementById("ace-status").textContent = "Generating...";
+  const mode = document.getElementById("ace-mode").value;
+  const params = {
+    mode: mode,
+    query: document.getElementById("ace-query").value,
+    vocal_language: mode === "Simple" ? document.getElementById("ace-simple-lang").value : document.getElementById("ace-vocal-lang").value,
+    caption: document.getElementById("ace-caption").value,
+    lyrics: document.getElementById("ace-lyrics").value,
+    instrumental: document.getElementById("ace-instrumental").checked,
+    cover_strength: parseFloat(document.getElementById("ace-cover-str").value),
+    repaint_start: parseFloat(document.getElementById("ace-repaint-start").value),
+    repaint_end: parseFloat(document.getElementById("ace-repaint-end").value),
+    inference_steps: parseInt(document.getElementById("ace-steps").value),
+    guidance_scale: parseFloat(document.getElementById("ace-guidance").value),
+    seed: parseInt(document.getElementById("ace-seed").value),
+    duration: parseInt(document.getElementById("ace-duration").value),
+    audio_format: document.getElementById("ace-format").value,
+  };
+  const result = await api("acestep_generate", { params });
+  hideLoading();
+  if (result) {
+    document.getElementById("ace-status").textContent = result.status || "Done";
+    if (result.audio) {
+      const el = document.getElementById("ace-audio-out");
+      el.src = `/file=${result.audio}`; el.style.display = "block";
+    }
+  }
+};
+
+window.acestepClear = function() {
+  document.getElementById("ace-status").textContent = "Ready";
+  document.getElementById("ace-audio-out").style.display = "none";
+};
+
+// ─── Theme Editor ──────────────────────────────────────
+window.liveThemeUpdate = function(el) {
+  document.documentElement.style.setProperty(el.dataset.var, el.value);
+};
+
+window.liveThemeUpdateText = function(el) {
+  document.documentElement.style.setProperty(el.dataset.var, el.value);
+};
+
+window.applyPreset = async function(presetName) {
+  const result = await api("apply_button_preset", { preset_name: presetName });
+  if (result) {
+    // Update CSS variables from the returned theme
+    for (const [key, value] of Object.entries(result)) {
+      const varName = "--" + key.replace(/_/g, "-");
+      try { document.documentElement.style.setProperty(varName, value); } catch(e) {}
+    }
+    // Update color pickers
+    document.querySelectorAll('#tab-set-theme input[type="color"]').forEach(input => {
+      const varName = input.dataset.var;
+      if (varName) {
+        const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        if (val && val.startsWith("#")) input.value = val;
+      }
+    });
+    toast("Preset '" + presetName + "' applied live", "success");
+  }
+};
+
+function getCurrentThemeFromPickers() {
+  const theme = {};
+  document.querySelectorAll('#tab-set-theme input[type="color"]').forEach(input => {
+    const varName = input.dataset.var;
+    if (varName) {
+      const key = varName.replace(/^--/, "").replace(/-/g, "_");
+      theme[key] = input.value;
+    }
+  });
+  theme.name = document.getElementById("te-name").value || "Untitled";
+  // Add text values for radius
+  theme.radius_sm = document.getElementById("te-radius-sm").value;
+  theme.radius_md = document.getElementById("te-radius-md").value;
+  theme.radius_lg = document.getElementById("te-radius-lg").value;
+  theme.radius_xl = document.getElementById("te-radius-xl").value;
+  return theme;
+}
+
+window.applyTheme = async function() {
+  const theme = getCurrentThemeFromPickers();
+  const result = await api("apply_theme", { theme });
+  toast(result || "Theme applied", "success");
+  document.getElementById("te-status").textContent = result || "Done";
+};
+
+window.saveTheme = async function() {
+  const theme = getCurrentThemeFromPickers();
+  const result = await api("save_theme", { theme });
+  toast(result || "Saved", "success");
+  document.getElementById("te-status").textContent = result || "Done";
+  await refreshSavedThemes();
+};
+
+window.loadSavedTheme = async function() {
+  const name = document.getElementById("te-saved").value;
+  if (!name) return;
+  const theme = await api("load_theme", { name });
+  if (theme) {
+    for (const [key, value] of Object.entries(theme)) {
+      const varName = "--" + key.replace(/_/g, "-");
+      try { document.documentElement.style.setProperty(varName, value); } catch(e) {}
+    }
+    document.querySelectorAll('#tab-set-theme input[type="color"]').forEach(input => {
+      const varName = input.dataset.var;
+      if (varName) {
+        const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        if (val && val.startsWith("#")) input.value = val;
+      }
+    });
+    if (theme.name) document.getElementById("te-name").value = theme.name;
+    toast("Theme '" + name + "' loaded", "success");
+  }
+};
+
+window.deleteSavedTheme = async function() {
+  const name = document.getElementById("te-saved").value;
+  if (!name) return;
+  const result = await api("delete_theme", { name });
+  toast(result || "Deleted", "info");
+  await refreshSavedThemes();
+};
+
+window.resetTheme = async function() {
+  const theme = await api("reset_theme");
+  if (theme) {
+    for (const [key, value] of Object.entries(theme)) {
+      const varName = "--" + key.replace(/_/g, "-");
+      try { document.documentElement.style.setProperty(varName, value); } catch(e) {}
+    }
+    document.querySelectorAll('#tab-set-theme input[type="color"]').forEach(input => {
+      const varName = input.dataset.var;
+      if (varName) {
+        const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        if (val && val.startsWith("#")) input.value = val;
+      }
+    });
+    toast("Theme reset to default", "info");
+  }
+};
+
+async function refreshSavedThemes() {
+  const themes = await api("list_themes");
+  if (themes) populateSelect("te-saved", themes, themes[0] || "");
+}
+window.refreshSavedThemes = refreshSavedThemes;
+
+// ─── Language ──────────────────────────────────────────
+window.saveLanguage = async function() {
+  const lang = document.getElementById("set-language").value;
+  const result = await api("save_language", { language: lang });
+  document.getElementById("set-lang-status").textContent = result || "Saved";
+  toast(result || "Language saved", "success");
+};
+
+// ─── Reset settings ───────────────────────────────────
+window.resetAllSettings = async function() {
+  const result = await api("reset_config");
+  document.getElementById("set-action-status").textContent = result || "Reset";
+  toast(result || "Settings reset", "info");
+};
+
+// ─── Audio upload for inference ────────────────────────
+document.getElementById("inf-audio-upload").addEventListener("change", async function() {
+  const file = this.files[0];
+  if (!file) return;
+  showLoading();
+  const result = await api("upload_audio", { file_data: handle_file(file) });
+  hideLoading();
+  if (result) {
+    document.getElementById("inf-audio-select").value = result;
+    toast("Audio uploaded: " + result, "success");
+  }
+});
+
+// ─── Init ──────────────────────────────────────────────
+initClient();
+</script>
 </body>
 </html>
