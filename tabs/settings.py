@@ -1,17 +1,22 @@
 """
 Settings tab for Hyper-RVC WebUI.
 
-UI-only settings: theme, language, about, restart.
+UI-only settings: theme CSS editor, language, about, restart.
+
+The old pre-made theme dropdown has been replaced with a full CSS theme
+editor that lets users customise colors, button styles, border-radius,
+and more.  Themes can be saved to / loaded from JSON files.
 """
 
 import gradio as gr
 import os
 import sys
 import json
+import copy
 from pathlib import Path
 
 from assets.i18n.i18n import I18nAuto
-import assets.themes.loadThemes as loadThemes
+import assets.themes.theme_editor as te
 
 i18n = I18nAuto()
 
@@ -22,6 +27,9 @@ CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
 LANGUAGE_PATH = os.path.join(now_dir, "assets", "i18n", "languages")
 
 
+# ---------------------------------------------------------------------------
+# Language helpers (unchanged)
+# ---------------------------------------------------------------------------
 def get_available_languages():
     """Get list of available language files."""
     language_files = list(Path(LANGUAGE_PATH).glob("*.json"))
@@ -81,39 +89,28 @@ def get_available_languages():
         "eu_ES": "Euskara",
         "gl_ES": "Galego",
         "is_IS": "Islenska",
-        # --- New languages added ---
-        # English regional variants
         "en_GB": "English (UK)",
         "en_AU": "English (Australia)",
         "en_CA": "English (Canada)",
         "en_IN": "English (India)",
-        # Spanish regional variants
         "es_MX": "Espanol (Mexico)",
         "es_AR": "Espanol (Argentina)",
         "es_CO": "Espanol (Colombia)",
-        # French regional variants
         "fr_CA": "Francais (Canada)",
         "fr_BE": "Francais (Belgique)",
-        # German regional variants
         "de_AT": "Deutsch (Osterreich)",
         "de_CH": "Deutsch (Schweiz)",
-        # Italian regional variant
         "it_CH": "Italiano (Svizzera)",
-        # Chinese regional variant
         "zh_HK": "Hong Kong Traditional Chinese",
-        # Arabic regional variants
         "ar_EG": "Arabic (Egypt)",
         "ar_MA": "Arabic (Morocco)",
-        # Portuguese regional variant
         "pt_PT": "Portugues (Portugal)",
-        # Other regional variants
         "ms_SG": "Bahasa Melayu (Singapore)",
         "nl_BE": "Nederlands (Belgie)",
         "sv_FI": "Svenska (Finland)",
         "ru_KZ": "Russian (Kazakhstan)",
         "pa_PK": "Punjabi (Pakistan)",
         "sw_TZ": "Kiswahili (Tanzania)",
-        # European languages
         "sq_AL": "Shqip (Albanian)",
         "be_BY": "Belaruskaya (Belarusian)",
         "bs_BA": "Bosanski (Bosnian)",
@@ -125,7 +122,6 @@ def get_available_languages():
         "nn_NO": "Norsk Nynorsk",
         "oc_FR": "Occitan",
         "sc_IT": "Sardu (Sardinian)",
-        # Asian languages
         "am_ET": "Amharic",
         "as_IN": "Assamese",
         "az_AZ": "Azerbaijani",
@@ -161,7 +157,6 @@ def get_available_languages():
         "tt_RU": "Tatar",
         "ug_CN": "Uyghur",
         "uz_UZ": "Uzbek",
-        # African languages
         "bm_ML": "Bamanankan (Bambara)",
         "ee_GH": "Ewegbe (Ewe)",
         "qu_PE": "Runasimi (Quechua)",
@@ -174,7 +169,6 @@ def get_available_languages():
         "yi_US": "Yiddish",
         "yo_NG": "Yoruba",
         "zu_ZA": "isiZulu (Zulu)",
-        # Additional languages
         "eo_XX": "Esperanto",
         "jv_ID": "Basa Jawa (Javanese)",
         "co_FR": "Corsu (Corsican)",
@@ -188,17 +182,14 @@ def get_available_languages():
     }
 
     languages = []
-
     for lang_file in language_files:
         lang_code = lang_file.stem
         lang_name = language_names.get(lang_code, lang_code)
         languages.append((lang_name, lang_code))
-
     return sorted(languages, key=lambda x: x[0])
 
 
 def _read_config():
-    """Read config.json, returning dict or empty dict on error."""
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -207,18 +198,15 @@ def _read_config():
 
 
 def _write_config(config):
-    """Write config dict to config.json."""
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
 
 def get_current_language():
-    """Get currently selected language."""
     return _read_config().get("lang", {}).get("selected_lang", "en_US")
 
 
 def save_language_selection(language):
-    """Save language selection to config."""
     try:
         config = _read_config()
         config.setdefault("lang", {})
@@ -230,27 +218,179 @@ def save_language_selection(language):
         return f"Error: {e}"
 
 
-def save_theme_selection(theme):
-    """Save theme selection to config."""
-    try:
-        config = _read_config()
-        config.setdefault("theme", {})
-        config["theme"]["class"] = theme
-        config["theme"]["file"] = None
-        _write_config(config)
-        loadThemes.select_theme(theme)
-        return f"Theme applied: {theme}"
-    except Exception as e:
-        return f"Error: {e}"
+# ---------------------------------------------------------------------------
+# Theme editor callback helpers
+# ---------------------------------------------------------------------------
+
+def _build_theme_dict(
+    # backgrounds
+    bg_primary, bg_secondary, bg_block, bg_input, bg_input_hover,
+    bg_label, bg_title,
+    # text
+    text_body, text_subdued, text_placeholder, text_label, text_title,
+    # primary accent
+    primary_300, primary_400, primary_500, primary_600,
+    # secondary accent
+    secondary_500, secondary_600,
+    # borders
+    border_primary, border_accent, border_input, border_input_hover,
+    # button style
+    btn_style,
+    # primary button
+    btn_primary_bg, btn_primary_bg_hover, btn_primary_border,
+    btn_primary_border_hover, btn_primary_text,
+    # secondary button
+    btn_secondary_bg, btn_secondary_bg_hover, btn_secondary_border,
+    btn_secondary_border_hover, btn_secondary_text,
+    # cancel button
+    btn_cancel_bg, btn_cancel_bg_hover, btn_cancel_border, btn_cancel_text,
+    # radius
+    radius_sm, radius_md, radius_lg, radius_xl,
+    # shadows
+    shadow_block, shadow_input_focus, shadow_drop,
+    # checkbox / slider
+    checkbox_bg, checkbox_bg_hover, checkbox_bg_selected,
+    checkbox_border, slider_color,
+    # table
+    table_even_bg, table_odd_bg, table_border,
+    # error
+    error_bg, error_border, error_text,
+    # name
+    theme_name,
+) -> dict:
+    """Pack all widget values back into a theme dictionary."""
+    return {
+        "name": theme_name,
+        "bg_primary": bg_primary,
+        "bg_secondary": bg_secondary,
+        "bg_block": bg_block,
+        "bg_input": bg_input,
+        "bg_input_hover": bg_input_hover,
+        "bg_label": bg_label,
+        "bg_title": bg_title,
+        "text_body": text_body,
+        "text_subdued": text_subdued,
+        "text_placeholder": text_placeholder,
+        "text_label": text_label,
+        "text_title": text_title,
+        "primary_300": primary_300,
+        "primary_400": primary_400,
+        "primary_500": primary_500,
+        "primary_600": primary_600,
+        "secondary_500": secondary_500,
+        "secondary_600": secondary_600,
+        "border_primary": border_primary,
+        "border_accent": border_accent,
+        "border_input": border_input,
+        "border_input_hover": border_input_hover,
+        "btn_style": btn_style,
+        "btn_primary_bg": btn_primary_bg,
+        "btn_primary_bg_hover": btn_primary_bg_hover,
+        "btn_primary_border": btn_primary_border,
+        "btn_primary_border_hover": btn_primary_border_hover,
+        "btn_primary_text": btn_primary_text,
+        "btn_secondary_bg": btn_secondary_bg,
+        "btn_secondary_bg_hover": btn_secondary_bg_hover,
+        "btn_secondary_border": btn_secondary_border,
+        "btn_secondary_border_hover": btn_secondary_border_hover,
+        "btn_secondary_text": btn_secondary_text,
+        "btn_cancel_bg": btn_cancel_bg,
+        "btn_cancel_bg_hover": btn_cancel_bg_hover,
+        "btn_cancel_border": btn_cancel_border,
+        "btn_cancel_text": btn_cancel_text,
+        "radius_sm": radius_sm,
+        "radius_md": radius_md,
+        "radius_lg": radius_lg,
+        "radius_xl": radius_xl,
+        "shadow_block": shadow_block,
+        "shadow_input_focus": shadow_input_focus,
+        "shadow_drop": shadow_drop,
+        "checkbox_bg": checkbox_bg,
+        "checkbox_bg_hover": checkbox_bg_hover,
+        "checkbox_bg_selected": checkbox_bg_selected,
+        "checkbox_border": checkbox_border,
+        "slider_color": slider_color,
+        "table_even_bg": table_even_bg,
+        "table_odd_bg": table_odd_bg,
+        "table_border": table_border,
+        "error_bg": error_bg,
+        "error_border": error_border,
+        "error_text": error_text,
+    }
 
 
-def get_current_theme():
-    """Get currently selected theme."""
-    return _read_config().get("theme", {}).get("class", "HyperRVC")
+def _apply_preset_callback(preset_name):
+    """Return a list of values for all widgets based on a button preset."""
+    merged = te.apply_button_preset(te.get_active_theme(), preset_name)
+    return _theme_to_widget_values(merged)
+
+
+def _theme_to_widget_values(t: dict) -> list:
+    """Convert a theme dict into the flat list expected by Gradio outputs."""
+    d = te.DEFAULT_THEME
+    keys = [
+        "bg_primary", "bg_secondary", "bg_block", "bg_input", "bg_input_hover",
+        "bg_label", "bg_title",
+        "text_body", "text_subdued", "text_placeholder", "text_label", "text_title",
+        "primary_300", "primary_400", "primary_500", "primary_600",
+        "secondary_500", "secondary_600",
+        "border_primary", "border_accent", "border_input", "border_input_hover",
+        "btn_style",
+        "btn_primary_bg", "btn_primary_bg_hover", "btn_primary_border",
+        "btn_primary_border_hover", "btn_primary_text",
+        "btn_secondary_bg", "btn_secondary_bg_hover", "btn_secondary_border",
+        "btn_secondary_border_hover", "btn_secondary_text",
+        "btn_cancel_bg", "btn_cancel_bg_hover", "btn_cancel_border", "btn_cancel_text",
+        "radius_sm", "radius_md", "radius_lg", "radius_xl",
+        "shadow_block", "shadow_input_focus", "shadow_drop",
+        "checkbox_bg", "checkbox_bg_hover", "checkbox_bg_selected",
+        "checkbox_border", "slider_color",
+        "table_even_bg", "table_odd_bg", "table_border",
+        "error_bg", "error_border", "error_text",
+        "name",
+    ]
+    return [t.get(k, d[k]) for k in keys]
+
+
+# Callback: apply button preset
+def on_preset_change(preset_name):
+    return _apply_preset_callback(preset_name)
+
+
+# Callback: save current theme
+def on_save_theme(theme_name, *values):
+    theme = _build_theme_dict(*values, theme_name=theme_name)
+    return te.save_theme(theme, theme_name)
+
+
+# Callback: load a saved theme
+def on_load_theme(theme_name):
+    theme = te.load_theme(theme_name)
+    return _theme_to_widget_values(theme)
+
+
+# Callback: delete a saved theme
+def on_delete_theme(theme_name):
+    return te.delete_theme(theme_name)
+
+
+# Callback: apply (activate) current theme
+def on_apply_theme(theme_name, *values):
+    theme = _build_theme_dict(*values, theme_name=theme_name)
+    return te.set_active_theme(theme)
+
+
+# Callback: reset to defaults
+def on_reset_theme():
+    return _theme_to_widget_values(te.DEFAULT_THEME)
+
+
+# Callback: refresh the list of saved themes
+def on_refresh_themes():
+    return gr.update(choices=te.list_saved_themes())
 
 
 def reset_to_defaults():
-    """Reset all settings to defaults."""
     try:
         _write_config({
             "theme": {"file": None, "class": "HyperRVC"},
@@ -262,39 +402,249 @@ def reset_to_defaults():
 
 
 def restart_app():
-    """Return a message instructing the user to restart the app."""
     return "Please restart the application to apply changes."
 
 
 def select_themes_tab():
-    """Create the settings tab UI -- appearance, language, about."""
+    """Create the settings tab UI -- theme editor, language, about."""
 
     current_lang = get_current_language()
-    current_theme = get_current_theme()
-    available_languages = get_available_languages()
-    available_themes = loadThemes.get_list()
+    active_theme = te.get_active_theme()
 
     with gr.Tabs():
-        # -- Appearance --
-        with gr.TabItem(i18n("Appearance")):
-            gr.Markdown("### Theme")
-            themes_select = gr.Dropdown(
-                choices=available_themes,
-                value=current_theme,
-                label=i18n("Theme"),
-                info=i18n("Select a theme. Changes apply immediately."),
-                interactive=True,
-            )
-            theme_status = gr.Textbox(label=i18n("Status"), interactive=False, visible=True)
-            themes_select.change(
-                fn=save_theme_selection,
-                inputs=[themes_select],
-                outputs=[theme_status],
+        # ── Theme CSS Editor ──────────────────────────────────
+        with gr.TabItem("Theme Editor"):
+            gr.Markdown(
+                """
+                ### Custom Theme Editor
+                Design your own visual theme by adjusting colors, button styles, and more.
+                Changes are applied after clicking **Apply Theme** and restarting the app.
+                """
             )
 
+            # ── Load / Save bar ──
+            with gr.Row():
+                saved_themes = gr.Dropdown(
+                    choices=te.list_saved_themes(),
+                    label="Load Saved Theme",
+                    scale=3,
+                )
+                load_btn = gr.Button("Load", variant="secondary", scale=1)
+                delete_btn = gr.Button("Delete", variant="stop", scale=1)
+                refresh_btn = gr.Button("Refresh List", variant="secondary", scale=1)
+
+            # ── Button style presets ──
+            with gr.Row():
+                preset_dropdown = gr.Dropdown(
+                    choices=["flat", "rounded", "pill", "material", "outline"],
+                    value=active_theme.get("btn_style", "rounded"),
+                    label="Button Style Preset",
+                    scale=3,
+                )
+                apply_preset_btn = gr.Button("Apply Preset", variant="primary", scale=1)
+
+            # ── Background colors ──
+            with gr.Accordion("Background Colors", open=True):
+                bg_primary = gr.ColorPicker(value=active_theme["bg_primary"], label="Primary Background")
+                bg_secondary = gr.ColorPicker(value=active_theme["bg_secondary"], label="Secondary Background")
+                bg_block = gr.ColorPicker(value=active_theme["bg_block"], label="Block Background")
+                bg_input = gr.ColorPicker(value=active_theme["bg_input"], label="Input Background")
+                bg_input_hover = gr.ColorPicker(value=active_theme["bg_input_hover"], label="Input Background (Hover)")
+                bg_label = gr.ColorPicker(value=active_theme["bg_label"], label="Label Background")
+                bg_title = gr.ColorPicker(value=active_theme["bg_title"], label="Title Background")
+
+            # ── Text colors ──
+            with gr.Accordion("Text Colors", open=True):
+                text_body = gr.ColorPicker(value=active_theme["text_body"], label="Body Text")
+                text_subdued = gr.ColorPicker(value=active_theme["text_subdued"], label="Subdued Text")
+                text_placeholder = gr.ColorPicker(value=active_theme["text_placeholder"], label="Placeholder Text")
+                text_label = gr.ColorPicker(value=active_theme["text_label"], label="Label Text")
+                text_title = gr.ColorPicker(value=active_theme["text_title"], label="Title Text")
+
+            # ── Primary accent ──
+            with gr.Accordion("Primary Accent", open=False):
+                primary_300 = gr.ColorPicker(value=active_theme["primary_300"], label="Primary 300")
+                primary_400 = gr.ColorPicker(value=active_theme["primary_400"], label="Primary 400")
+                primary_500 = gr.ColorPicker(value=active_theme["primary_500"], label="Primary 500")
+                primary_600 = gr.ColorPicker(value=active_theme["primary_600"], label="Primary 600")
+
+            # ── Secondary accent ──
+            with gr.Accordion("Secondary Accent", open=False):
+                secondary_500 = gr.ColorPicker(value=active_theme["secondary_500"], label="Secondary 500")
+                secondary_600 = gr.ColorPicker(value=active_theme["secondary_600"], label="Secondary 600")
+
+            # ── Borders ──
+            with gr.Accordion("Borders", open=False):
+                border_primary = gr.ColorPicker(value=active_theme["border_primary"], label="Primary Border")
+                border_accent = gr.ColorPicker(value=active_theme["border_accent"], label="Accent Border")
+                border_input = gr.ColorPicker(value=active_theme["border_input"], label="Input Border")
+                border_input_hover = gr.ColorPicker(value=active_theme["border_input_hover"], label="Input Border (Hover)")
+
+            # ── Button colors ──
+            with gr.Accordion("Button Colors", open=True):
+                with gr.Group():
+                    gr.Markdown("**Primary Button**")
+                    with gr.Row():
+                        btn_primary_bg = gr.ColorPicker(value=active_theme["btn_primary_bg"], label="Background")
+                        btn_primary_bg_hover = gr.ColorPicker(value=active_theme["btn_primary_bg_hover"], label="Background (Hover)")
+                    with gr.Row():
+                        btn_primary_border = gr.ColorPicker(value=active_theme["btn_primary_border"], label="Border")
+                        btn_primary_border_hover = gr.ColorPicker(value=active_theme["btn_primary_border_hover"], label="Border (Hover)")
+                    btn_primary_text = gr.ColorPicker(value=active_theme["btn_primary_text"], label="Text Color")
+
+                with gr.Group():
+                    gr.Markdown("**Secondary Button**")
+                    with gr.Row():
+                        btn_secondary_bg = gr.ColorPicker(value=active_theme["btn_secondary_bg"], label="Background")
+                        btn_secondary_bg_hover = gr.ColorPicker(value=active_theme["btn_secondary_bg_hover"], label="Background (Hover)")
+                    with gr.Row():
+                        btn_secondary_border = gr.ColorPicker(value=active_theme["btn_secondary_border"], label="Border")
+                        btn_secondary_border_hover = gr.ColorPicker(value=active_theme["btn_secondary_border_hover"], label="Border (Hover)")
+                    btn_secondary_text = gr.ColorPicker(value=active_theme["btn_secondary_text"], label="Text Color")
+
+                with gr.Group():
+                    gr.Markdown("**Cancel / Stop Button**")
+                    with gr.Row():
+                        btn_cancel_bg = gr.ColorPicker(value=active_theme["btn_cancel_bg"], label="Background")
+                        btn_cancel_bg_hover = gr.ColorPicker(value=active_theme["btn_cancel_bg_hover"], label="Background (Hover)")
+                    btn_cancel_border = gr.ColorPicker(value=active_theme["btn_cancel_border"], label="Border")
+                    btn_cancel_text = gr.ColorPicker(value=active_theme["btn_cancel_text"], label="Text Color")
+
+            # ── Border Radius ──
+            with gr.Accordion("Border Radius", open=False):
+                radius_sm = gr.Textbox(value=active_theme["radius_sm"], label="Small Radius (e.g. 4px)")
+                radius_md = gr.Textbox(value=active_theme["radius_md"], label="Medium Radius (e.g. 8px)")
+                radius_lg = gr.Textbox(value=active_theme["radius_lg"], label="Large Radius (e.g. 12px)")
+                radius_xl = gr.Textbox(value=active_theme["radius_xl"], label="Extra-Large Radius (e.g. 16px)")
+
+            # ── Shadows ──
+            with gr.Accordion("Shadows", open=False):
+                shadow_block = gr.Textbox(value=active_theme["shadow_block"], label="Block Shadow")
+                shadow_input_focus = gr.Textbox(value=active_theme["shadow_input_focus"], label="Input Focus Shadow")
+                shadow_drop = gr.Textbox(value=active_theme["shadow_drop"], label="Drop Shadow")
+
+            # ── Checkbox / Slider ──
+            with gr.Accordion("Checkbox & Slider", open=False):
+                checkbox_bg = gr.ColorPicker(value=active_theme["checkbox_bg"], label="Checkbox Background")
+                checkbox_bg_hover = gr.ColorPicker(value=active_theme["checkbox_bg_hover"], label="Checkbox Background (Hover)")
+                checkbox_bg_selected = gr.ColorPicker(value=active_theme["checkbox_bg_selected"], label="Checkbox Background (Selected)")
+                checkbox_border = gr.ColorPicker(value=active_theme["checkbox_border"], label="Checkbox Border")
+                slider_color = gr.ColorPicker(value=active_theme["slider_color"], label="Slider Color")
+
+            # ── Table ──
+            with gr.Accordion("Table", open=False):
+                table_even_bg = gr.ColorPicker(value=active_theme["table_even_bg"], label="Even Row Background")
+                table_odd_bg = gr.ColorPicker(value=active_theme["table_odd_bg"], label="Odd Row Background")
+                table_border = gr.ColorPicker(value=active_theme["table_border"], label="Table Border")
+
+            # ── Error ──
+            with gr.Accordion("Error States", open=False):
+                error_bg = gr.ColorPicker(value=active_theme["error_bg"], label="Error Background")
+                error_border = gr.ColorPicker(value=active_theme["error_border"], label="Error Border")
+                error_text = gr.ColorPicker(value=active_theme["error_text"], label="Error Text")
+
+            # ── Theme name & action buttons ──
+            gr.Markdown("### Save & Apply")
+            with gr.Row():
+                theme_name_input = gr.Textbox(
+                    value=active_theme.get("name", "My Custom Theme"),
+                    label="Theme Name",
+                    scale=3,
+                )
+
+            with gr.Row():
+                apply_btn = gr.Button("Apply Theme", variant="primary", size="lg")
+                save_btn = gr.Button("Save Theme", variant="secondary", size="lg")
+                reset_btn = gr.Button("Reset to Default", variant="stop", size="lg")
+
+            status_box = gr.Textbox(label="Status", interactive=False)
+
+            # Collect all editable widgets for batch updates
+            _all_widgets = [
+                bg_primary, bg_secondary, bg_block, bg_input, bg_input_hover,
+                bg_label, bg_title,
+                text_body, text_subdued, text_placeholder, text_label, text_title,
+                primary_300, primary_400, primary_500, primary_600,
+                secondary_500, secondary_600,
+                border_primary, border_accent, border_input, border_input_hover,
+                preset_dropdown,
+                btn_primary_bg, btn_primary_bg_hover, btn_primary_border,
+                btn_primary_border_hover, btn_primary_text,
+                btn_secondary_bg, btn_secondary_bg_hover, btn_secondary_border,
+                btn_secondary_border_hover, btn_secondary_text,
+                btn_cancel_bg, btn_cancel_bg_hover, btn_cancel_border, btn_cancel_text,
+                radius_sm, radius_md, radius_lg, radius_xl,
+                shadow_block, shadow_input_focus, shadow_drop,
+                checkbox_bg, checkbox_bg_hover, checkbox_bg_selected,
+                checkbox_border, slider_color,
+                table_even_bg, table_odd_bg, table_border,
+                error_bg, error_border, error_text,
+            ]
+
+            # ── Wire callbacks ─────────────────────────────────
+
+            # Apply button preset
+            apply_preset_btn.click(
+                fn=on_preset_change,
+                inputs=[preset_dropdown],
+                outputs=_all_widgets + [theme_name_input],
+            )
+
+            # Save theme
+            save_btn.click(
+                fn=on_save_theme,
+                inputs=[theme_name_input] + _all_widgets,
+                outputs=[status_box],
+            ).then(
+                fn=on_refresh_themes,
+                inputs=[],
+                outputs=[saved_themes],
+            )
+
+            # Load saved theme
+            load_btn.click(
+                fn=on_load_theme,
+                inputs=[saved_themes],
+                outputs=_all_widgets + [theme_name_input],
+            )
+
+            # Delete saved theme
+            delete_btn.click(
+                fn=on_delete_theme,
+                inputs=[saved_themes],
+                outputs=[status_box],
+            ).then(
+                fn=on_refresh_themes,
+                inputs=[],
+                outputs=[saved_themes],
+            )
+
+            # Refresh theme list
+            refresh_btn.click(
+                fn=on_refresh_themes,
+                inputs=[],
+                outputs=[saved_themes],
+            )
+
+            # Apply (activate) theme
+            apply_btn.click(
+                fn=on_apply_theme,
+                inputs=[theme_name_input] + _all_widgets,
+                outputs=[status_box],
+            )
+
+            # Reset to defaults
+            reset_btn.click(
+                fn=on_reset_theme,
+                inputs=[],
+                outputs=_all_widgets + [theme_name_input],
+            )
+
+        # ── Language ───────────────────────────────────────────
+        with gr.TabItem(i18n("Language")):
             gr.Markdown("### Language")
             language_select = gr.Dropdown(
-                choices=available_languages,
+                choices=get_available_languages(),
                 value=current_lang,
                 label=i18n("Language"),
                 info=i18n("Select your preferred language. Requires restart."),
@@ -307,7 +657,7 @@ def select_themes_tab():
                 outputs=[language_status],
             )
 
-        # -- About --
+        # ── About ──────────────────────────────────────────────
         with gr.TabItem(i18n("About")):
             gr.HTML("""
             <div style="text-align:center; padding: 20px 0 10px 0;">
@@ -577,7 +927,7 @@ def select_themes_tab():
                 </div>
                 """)
 
-        # -- Actions --
+        # ── Actions ────────────────────────────────────────────
         with gr.TabItem(i18n("Actions")):
             gr.Markdown("### Restart & Reset")
 

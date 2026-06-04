@@ -1,8 +1,9 @@
 {
   "theme": {
-    "file": "HyperRVC.py",
-    "class": "HyperRVC"
+    "file": null,
+    "class": null
   },
+  "custom_theme": {},
   "lang": {
     "override": false,
     "selected_lang": "en_US"
