@@ -171,6 +171,71 @@ async def homepage():
         return f.read()
 
 
+# ─── Static file serving ────────────────────────────────────────────────────
+app.serve_static(STATIC_DIR, url_path="/static")
+
+# Also serve audio_files directory for playback
+AUDIO_SERVE_ROOT = os.path.join(now_dir, "audio_files")
+os.makedirs(AUDIO_SERVE_ROOT, exist_ok=True)
+app.serve_static(AUDIO_SERVE_ROOT, url_path="/audio")
+
+# Serve logs directory for model access
+LOGS_SERVE_ROOT = os.path.join(now_dir, "logs")
+os.makedirs(LOGS_SERVE_ROOT, exist_ok=True)
+app.serve_static(LOGS_SERVE_ROOT, url_path="/logs")
+
+
+# ─── File upload endpoint ───────────────────────────────────────────────────
+@app.post("/upload/audio")
+async def upload_audio_file(file: UploadFile):
+    """Upload an audio file to the audio_files/original_files directory."""
+    try:
+        safe_name = _format_title(file.filename or "upload.wav")
+        target_path = os.path.join(audio_root, safe_name)
+        if os.path.exists(target_path):
+            os.remove(target_path)
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        contents = await file.read()
+        with open(target_path, "wb") as f:
+            f.write(contents)
+        return {"status": "ok", "path": target_path, "name": safe_name}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/upload/model")
+async def upload_model_file(file: UploadFile):
+    """Upload a model file (.pth or .index) to the logs directory."""
+    try:
+        filename = file.filename or ""
+        if ".pth" not in filename and ".index" not in filename:
+            return {"status": "error", "message": "Not a valid model file (.pth or .index)"}
+
+        file_name = _format_title(filename)
+        if ".pth" in file_name:
+            model_name = _format_title(file_name.split(".pth")[0])
+        else:
+            model_name = _format_title(file_name.split(".index")[0])
+
+        model_name = regex.sub(r"\d+[se]", "", model_name)
+        if "__" in model_name:
+            model_name = model_name.replace("__", "")
+
+        model_path = os.path.join(now_dir, "logs", model_name)
+        os.makedirs(model_path, exist_ok=True)
+        target = os.path.join(model_path, file_name)
+        if os.path.exists(target):
+            os.remove(target)
+
+        contents = await file.read()
+        with open(target, "wb") as f:
+            f.write(contents)
+
+        return {"status": "ok", "path": target, "message": f"{file_name} saved in {model_path}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # ─── Data / list endpoints ──────────────────────────────────────────────────
 @app.api(name="get_models")
 def api_get_models():

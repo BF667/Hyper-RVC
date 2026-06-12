@@ -658,7 +658,7 @@ let gradioClient = null;
 
 async function initClient() {
   try {
-    gradioClient = await Client.connect(window.location.origin);
+    gradioClient = await Client.connect(window.location.origin + "/gradio_api");
     console.log("Gradio client connected");
     await loadInitialData();
   } catch(e) {
@@ -1007,9 +1007,21 @@ window.downloadMusic = async function() {
 async function uploadModelFile(file) {
   if (!file) return;
   showLoading();
-  const result = await api("upload_model_file", { file_data: handle_file(file) });
-  hideLoading();
-  toast(result || "File uploaded", result && result.startsWith("Error") ? "error" : "success");
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const resp = await fetch("/upload/model", { method: "POST", body: formData });
+    const result = await resp.json();
+    hideLoading();
+    if (result.status === "ok") {
+      toast(result.message || "File uploaded", "success");
+    } else {
+      toast(result.message || "Upload failed", "error");
+    }
+  } catch(e) {
+    hideLoading();
+    toast("Upload error: " + e.message, "error");
+  }
 }
 
 // ─── TTS ───────────────────────────────────────────────
@@ -1062,8 +1074,25 @@ window.transcribeAudio = async function() {
   document.getElementById("wh-status").textContent = "Transcribing...";
   const audioFile = document.getElementById("wh-audio").files[0];
   if (!audioFile) { toast("Please upload an audio file", "error"); hideLoading(); return; }
-  const uploaded = await api("upload_audio", { file_data: handle_file(audioFile) });
-  if (!uploaded) { hideLoading(); return; }
+  // Upload via REST endpoint
+  let uploaded = null;
+  try {
+    const formData = new FormData();
+    formData.append("file", audioFile);
+    const resp = await fetch("/upload/audio", { method: "POST", body: formData });
+    const uploadResult = await resp.json();
+    if (uploadResult.status === "ok") {
+      uploaded = uploadResult.path;
+    } else {
+      toast(uploadResult.message || "Audio upload failed", "error");
+      hideLoading();
+      return;
+    }
+  } catch(e) {
+    toast("Audio upload error: " + e.message, "error");
+    hideLoading();
+    return;
+  }
   const params = {
     audio_path: uploaded,
     model_size: document.getElementById("wh-model").value,
@@ -1279,11 +1308,21 @@ document.getElementById("inf-audio-upload").addEventListener("change", async fun
   const file = this.files[0];
   if (!file) return;
   showLoading();
-  const result = await api("upload_audio", { file_data: handle_file(file) });
-  hideLoading();
-  if (result) {
-    document.getElementById("inf-audio-select").value = result;
-    toast("Audio uploaded: " + result, "success");
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const resp = await fetch("/upload/audio", { method: "POST", body: formData });
+    const uploadResult = await resp.json();
+    hideLoading();
+    if (uploadResult.status === "ok") {
+      document.getElementById("inf-audio-select").value = uploadResult.path;
+      toast("Audio uploaded: " + uploadResult.name, "success");
+    } else {
+      toast(uploadResult.message || "Upload failed", "error");
+    }
+  } catch(e) {
+    hideLoading();
+    toast("Upload error: " + e.message, "error");
   }
 });
 
