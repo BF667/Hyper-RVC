@@ -274,7 +274,7 @@ def convert_audio(args):
         'rms_mix_rate': args.rms_mix_rate,
         'protect': args.protect,
         'pitch_extract': args.pitch_extract,
-        'hop_lenght': args.hop_length,
+        'hop_length': args.hop_length,
         'reverb_room_size': args.reverb_room_size,
         'reverb_damping': args.reverb_damping,
         'reverb_wet_gain': args.reverb_wet_gain,

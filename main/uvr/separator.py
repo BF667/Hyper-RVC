@@ -149,7 +149,7 @@ def separate_vocals(
     inst_dir: str,
     devices: str,
     use_fp16: bool,
-) -> str:
+) -> Optional[str]:
     """
     Separate vocals from an input audio file.
 

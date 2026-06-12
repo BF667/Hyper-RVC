@@ -36,8 +36,9 @@ from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 from transformers.generation.streamers import BaseStreamer
 from diffusers.models import AutoencoderOobleck
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 from main.acestep.constants import (
     TASK_INSTRUCTIONS,
     SFT_GEN_PROMPT,
@@ -947,6 +948,10 @@ class AceStepHandler:
             f"- duration: {duration}\n"
         )
     
+    def _create_fallback_vocal_languages(self, batch_size: int) -> List[str]:
+        """Create fallback vocal languages list (default 'en' for all items)."""
+        return ["en"] * batch_size
+
     def _parse_metas(self, metas: List[Union[str, Dict[str, Any]]]) -> List[str]:
         """
         Parse and normalize metadata with fallbacks.

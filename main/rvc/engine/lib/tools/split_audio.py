@@ -14,9 +14,6 @@ if sys.version_info >= (3, 13):
 
 from pydub.silence import detect_nonsilent
 from pydub import AudioSegment
-import numpy as np
-import re
-import os
 
 from main.rvc.engine.lib.utils import format_title
 

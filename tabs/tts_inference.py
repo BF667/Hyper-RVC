@@ -400,7 +400,7 @@ def tts_inference_tab():
     clear_button.click(
         fn=clear_all,
         inputs=[],
-        outputs=[text_input, status_output, tts_audio_output, rvc_audio_output, rvc_audio_output]
+        outputs=[text_input, status_output, tts_audio_output, rvc_audio_output]
     )
 
     generate_button.click(
@@ -423,7 +423,7 @@ def tts_inference_tab():
             devices,
             export_format,
         ],
-        outputs=[status_output, tts_audio_output, rvc_audio_output, rvc_audio_output]
+        outputs=[status_output, tts_audio_output, rvc_audio_output]
     )
 
     return tts_audio_output

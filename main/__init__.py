@@ -88,6 +88,14 @@ from main.acestep_inference import (  # noqa: E402, F401
     clear_output_files,
 )
 
+from main.tools.variables import (  # noqa: E402, F401
+    models_vocals,
+    karaoke_models,
+    dereverb_models,
+    deecho_models,
+    denoise_models,
+)
+
 __all__ = [
     # file_utils
     "get_last_modified_file",
@@ -131,4 +139,10 @@ __all__ = [
     "get_available_lm_models",
     "get_output_files",
     "clear_output_files",
+    # variables
+    "models_vocals",
+    "karaoke_models",
+    "dereverb_models",
+    "deecho_models",
+    "denoise_models",
 ]

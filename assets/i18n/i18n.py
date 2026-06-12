@@ -9,7 +9,7 @@ import os
 import sys
 import json
 from pathlib import Path
-from locale import getdefaultlocale
+import locale
 from typing import Optional, List, Dict
 
 now_dir = os.getcwd()
@@ -42,7 +42,7 @@ class I18nAuto:
         self.language = lang_prefix
 
         if override == False:
-            language = language or getdefaultlocale()[0]
+            language = language or locale.getlocale()[0]
             lang_prefix = language[:2] if language is not None else "en"
             available_languages = self._get_available_languages()
             matching_languages = [

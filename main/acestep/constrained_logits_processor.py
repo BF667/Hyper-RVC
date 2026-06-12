@@ -5,8 +5,14 @@ from loguru import logger
 from transformers import AutoTokenizer
 from transformers.generation.logits_process import LogitsProcessor
 import os
+import sys
 import torch
-from acestep.constants import (
+
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+from main.acestep.constants import (
     VALID_LANGUAGES,
     KEYSCALE_NOTES,
     KEYSCALE_ACCIDENTALS,

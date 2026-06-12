@@ -8,12 +8,17 @@ backward-compatible Gradio UI support.
 
 import math
 import os
+import sys
 import tempfile
 from typing import Optional, Union, List, Dict, Any, Tuple
 from dataclasses import dataclass, field, asdict
 from loguru import logger
 
-from acestep.audio_utils import AudioSaver, generate_uuid_from_params
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+from main.acestep.audio_utils import AudioSaver, generate_uuid_from_params
 
 # HuggingFace Space environment detection
 IS_HUGGINGFACE_SPACE = os.environ.get("SPACE_ID") is not None

@@ -13,13 +13,18 @@ import os
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.argv = sys.argv  # preserve CLI args
 
-from app import *  # noqa: F401, F403
+from app import app, get_port_from_args, MAX_PORT_ATTEMPTS  # noqa: F401
 
 if __name__ == "__main__":
     port = get_port_from_args()
     for _ in range(MAX_PORT_ATTEMPTS):
         try:
-            launch(port)
+            app.launch(
+                server_port=port,
+                share="--share" in sys.argv,
+                inbrowser="--open" in sys.argv,
+                show_error=True,
+            )
             break
         except OSError:
             print(

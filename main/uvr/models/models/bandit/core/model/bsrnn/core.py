@@ -8,8 +8,20 @@ from models.bandit.core.model.bsrnn import BandsplitCoreBase
 from models.bandit.core.model.bsrnn.bandsplit import BandSplitModule
 from models.bandit.core.model.bsrnn.maskestim import (
     MaskEstimationModule,
-    OverlappingMaskEstimationModule
+    MultAddMaskEstimationModule,
+    OverlappingMaskEstimationModule,
 )
+
+
+class PatchingMaskEstimationModule:
+    """Stub class – PatchingMaskEstimationModule is not yet implemented."""
+    def __init__(self, **kwargs):
+        raise NotImplementedError(
+            "PatchingMaskEstimationModule is not implemented. "
+            "The overlapping_band + patching mask code path is unavailable."
+        )
+
+
 from models.bandit.core.model.bsrnn.tfmodel import (
     ConvolutionalTimeFreqModule,
     SeqBandModellingModule,

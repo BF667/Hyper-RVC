@@ -51,7 +51,7 @@ def get_available_dit_models() -> List[str]:
     Returns an empty list if the acestep package is not installed.
     """
     try:
-        from acestep.handler import AceStepHandler
+        from main.acestep.handler import AceStepHandler
         handler = AceStepHandler()
         return handler.get_available_acestep_v15_models() or []
     except Exception as e:
@@ -65,7 +65,7 @@ def get_available_lm_models() -> List[str]:
     Returns an empty list if the acestep package is not installed.
     """
     try:
-        from acestep.llm_inference import LLMHandler
+        from main.acestep.llm_inference import LLMHandler
         handler = LLMHandler()
         return handler.get_available_5hz_lm_models() or []
     except Exception as e:
@@ -243,7 +243,7 @@ def run_acestep_inference(
         return "Error: Models not loaded. Please load a model first.", None
 
     try:
-        from acestep.inference import GenerationParams, GenerationConfig, generate_music
+        from main.acestep.inference import GenerationParams, GenerationConfig, generate_music
     except ImportError as exc:
         return f"Error: ACE-Step not installed ({exc})", None
 
@@ -336,7 +336,7 @@ def run_acestep_simple_mode(
         return "Error: LM handler required for simple mode. Enable LM and reload.", None
 
     try:
-        from acestep.inference import create_sample, GenerationParams, GenerationConfig, generate_music
+        from main.acestep.inference import create_sample, GenerationParams, GenerationConfig, generate_music
     except ImportError as exc:
         return f"Error: ACE-Step not installed ({exc})", None
 

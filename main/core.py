@@ -70,7 +70,7 @@ def full_inference_program(
     rms_mix_rate: float,
     protect: float,
     pitch_extract: str,
-    hop_lenght: int,
+    hop_length: int,
     reverb_room_size: float,
     reverb_damping: float,
     reverb_wet_gain: float,
@@ -157,6 +157,9 @@ def full_inference_program(
     input_file = search_with_word(vocals_path, "vocals")
     if input_file:
         input_file = os.path.join(vocals_path, input_file)
+    else:
+        logger.warning("No vocals file found; using original input for karaoke separation.")
+        input_file = input_audio_path
     separate_karaoke(
         input_file, karaoke_model, store_dir, devices, use_fp16,
         batch_size, use_tta, input_audio_basename
@@ -170,6 +173,9 @@ def full_inference_program(
     input_file = search_with_word(karaoke_path, "karaoke")
     if input_file:
         input_file = os.path.join(karaoke_path, input_file)
+    else:
+        logger.warning("No karaoke file found; using vocals for dereverb.")
+        input_file = input_audio_path
     remove_reverb(
         input_file, dereverb_model, store_dir, devices, use_fp16,
         batch_size, use_tta, input_audio_basename
@@ -182,11 +188,14 @@ def full_inference_program(
     if deecho:
         dereverb_path = os.path.join(now_dir, "audio_files", music_folder, "dereverb")
         noreverb_file = search_with_word(dereverb_path, "noreverb")
-        deecho_input = os.path.join(dereverb_path, noreverb_file)
-        remove_echo(
-            deecho_input, deecho_model, store_dir, devices, use_fp16,
-            batch_size, use_tta, input_audio_basename
-        )
+        if not noreverb_file:
+            logger.warning("No noreverb file found; skipping deecho.")
+        else:
+            deecho_input = os.path.join(dereverb_path, noreverb_file)
+            remove_echo(
+                deecho_input, deecho_model, store_dir, devices, use_fp16,
+                batch_size, use_tta, input_audio_basename
+            )
 
     # ------------------------------------------------------------------
     # 5. Denoise (optional)
@@ -250,13 +259,12 @@ def full_inference_program(
         protect=protect,
         split_audio=split_audio,
         f0_autotune=autotune,
-        hop_length=hop_lenght,
+        hop_length=hop_length,
         export_format=export_format_rvc,
     )
 
-    backing_vocals = os.path.join(
-        karaoke_path, search_with_word(karaoke_path, "instrumental")
-    )
+    _bv_file = search_with_word(karaoke_path, "instrumental")
+    backing_vocals = os.path.join(karaoke_path, _bv_file) if _bv_file else None
 
     # ------------------------------------------------------------------
     # 7. Backing vocals inference (optional)
@@ -265,42 +273,47 @@ def full_inference_program(
         logger.info("Inferring backing vocals")
         karaoke_path = os.path.join(now_dir, "audio_files", music_folder, "karaoke")
         instrumental_file = search_with_word(karaoke_path, "instrumental")
-        backing_vocals = os.path.join(karaoke_path, instrumental_file)
-        output_backing_vocals = os.path.join(
-            karaoke_path, f"{input_audio_basename}_instrumental_output.wav"
-        )
-        run_rvc_conversion(
-            audio_input_path=backing_vocals,
-            audio_output_path=output_backing_vocals,
-            model_path=infer_backing_vocals_model,
-            index_path=infer_backing_vocals_index,
-            embedder_model=embedder_model_back,
-            pitch=pitch_back,
-            f0_method=pitch_extract_back,
-            filter_radius=filter_radius_back,
-            index_rate=index_rate_back,
-            volume_envelope=rms_mix_rate_back,
-            protect=protect_back,
-            split_audio=split_audio_back,
-            f0_autotune=autotune_back,
-            hop_length=hop_length_back,
-            export_format=export_format_rvc_back,
-        )
-        backing_vocals = output_backing_vocals
+        if not instrumental_file:
+            logger.warning("No instrumental file found for backing vocals inference.")
+        else:
+            backing_vocals = os.path.join(karaoke_path, instrumental_file)
+            output_backing_vocals = os.path.join(
+                karaoke_path, f"{input_audio_basename}_instrumental_output.wav"
+            )
+            run_rvc_conversion(
+                audio_input_path=backing_vocals,
+                audio_output_path=output_backing_vocals,
+                model_path=infer_backing_vocals_model,
+                index_path=infer_backing_vocals_index,
+                embedder_model=embedder_model_back,
+                pitch=pitch_back,
+                f0_method=pitch_extract_back,
+                filter_radius=filter_radius_back,
+                index_rate=index_rate_back,
+                volume_envelope=rms_mix_rate_back,
+                protect=protect_back,
+                split_audio=split_audio_back,
+                f0_autotune=autotune_back,
+                hop_length=hop_length_back,
+                export_format=export_format_rvc_back,
+            )
+            backing_vocals = output_backing_vocals
 
     # ------------------------------------------------------------------
     # 8. Post-process – reverb (optional)
     # ------------------------------------------------------------------
     if reverb:
         rvc_dir = os.path.join(now_dir, "audio_files", music_folder, "rvc")
-        reverb_input = os.path.join(
-            rvc_dir, get_last_modified_file(rvc_dir)
-        )
-        reverb_output = os.path.join(rvc_dir, os.path.basename(input_audio_path))
-        add_audio_effects(
-            reverb_input, reverb_room_size, reverb_wet_gain, reverb_dry_gain,
-            reverb_damping, reverb_width, reverb_output
-        )
+        reverb_input_file = get_last_modified_file(rvc_dir)
+        if not reverb_input_file:
+            logger.warning("No RVC output found; skipping reverb.")
+        else:
+            reverb_input = os.path.join(rvc_dir, reverb_input_file)
+            reverb_output = os.path.join(rvc_dir, os.path.basename(input_audio_path))
+            add_audio_effects(
+                reverb_input, reverb_room_size, reverb_wet_gain, reverb_dry_gain,
+                reverb_damping, reverb_width, reverb_output
+            )
 
     # ------------------------------------------------------------------
     # 9. Pitch adjustment for instrumentals (optional)
@@ -311,13 +324,18 @@ def full_inference_program(
             now_dir, "audio_files", music_folder, "instrumentals"
         )
         inst_file_name = search_with_word(inst_path_dir, "instrumentals")
-        inst_path_file = os.path.join(inst_path_dir, inst_file_name)
-        audio = AudioSegment.from_file(inst_path_file)
-        factor = 2 ** (change_inst_pitch / 12)
-        new_frame_rate = int(audio.frame_rate * factor)
-        audio = audio._spawn(audio.raw_data, overrides={"frame_rate": new_frame_rate})
-        audio = audio.set_frame_rate(audio.frame_rate)
-        audio.export(os.path.join(inst_path_dir, "inst_with_changed_pitch.flac"), format="flac")
+        if not inst_file_name:
+            logger.warning("No instrumental file found for pitch adjustment.")
+        else:
+            inst_path_file = os.path.join(inst_path_dir, inst_file_name)
+            audio = AudioSegment.from_file(inst_path_file)
+            factor = 2 ** (change_inst_pitch / 12)
+            new_frame_rate = int(audio.frame_rate * factor)
+            audio = audio._spawn(audio.raw_data, overrides={"frame_rate": new_frame_rate})
+            audio = audio.set_frame_rate(audio.frame_rate)
+            pitch_shifted_path = os.path.join(inst_path_dir, "inst_with_changed_pitch.flac")
+            audio.export(pitch_shifted_path, format="flac")
+            inst_file = pitch_shifted_path
 
     # ------------------------------------------------------------------
     # 10. Merge audios
@@ -326,13 +344,17 @@ def full_inference_program(
     os.makedirs(store_dir, exist_ok=True)
 
     vocals_path = os.path.join(now_dir, "audio_files", music_folder, "rvc")
-    vocals_file = get_last_modified_file(vocals_path)
-    vocals_file = os.path.join(vocals_path, vocals_file)
+    vocals_file_name = get_last_modified_file(vocals_path)
+    if not vocals_file_name:
+        raise RuntimeError("No RVC output file found — voice conversion may have failed.")
+    vocals_file = os.path.join(vocals_path, vocals_file_name)
 
     karaoke_path = os.path.join(now_dir, "audio_files", music_folder, "karaoke")
     karaoke_file = search_with_word(karaoke_path, "Instrumental") or search_with_word(
         karaoke_path, "instrumental"
     )
+    if not karaoke_file:
+        raise RuntimeError("No instrumental/karaoke file found for merging.")
     karaoke_file = os.path.join(karaoke_path, karaoke_file)
 
     final_output_path = os.path.join(

@@ -12,8 +12,6 @@ import sys
 import yaml
 from typing import Dict, Any
 
-import yaml
-
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 

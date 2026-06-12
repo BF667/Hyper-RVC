@@ -88,11 +88,11 @@ def format_segments(segments: List[Dict]) -> str:
     return "\n".join(formatted)
 
 
-def save_transcription(segments: List[Dict], output_path: str, format: str = "txt") -> str:
+def save_transcription(segments: List[Dict], output_path: str, output_format: str = "txt") -> str:
     """Save transcription to file."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    if format == "txt":
+    if output_format == "txt":
         with open(output_path, "w", encoding="utf-8") as f:
             for seg in segments:
                 start = format_timestamp(seg.get("start", 0))
@@ -105,11 +105,11 @@ def save_transcription(segments: List[Dict], output_path: str, format: str = "tx
                 else:
                     f.write(f"[{start} -> {end}] {text}\n")
 
-    elif format == "json":
+    elif output_format == "json":
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(segments, f, indent=2, ensure_ascii=False)
 
-    elif format == "srt":
+    elif output_format == "srt":
         with open(output_path, "w", encoding="utf-8") as f:
             for i, seg in enumerate(segments, 1):
                 start = format_timestamp_srt(seg.get("start", 0))
@@ -120,7 +120,7 @@ def save_transcription(segments: List[Dict], output_path: str, format: str = "tx
                 f.write(f"{start} --> {end}\n")
                 f.write(f"{text}\n\n")
 
-    elif format == "vtt":
+    elif output_format == "vtt":
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("WEBVTT\n\n")
             for seg in segments:
@@ -438,7 +438,7 @@ def whisper_diarization_tab():
     clear_button.click(
         fn=clear_all,
         inputs=[],
-        outputs=[status_output, output_file_path, transcription_output, status_output]
+        outputs=[status_output, output_file_path, transcription_output]
     )
 
     transcribe_button.click(

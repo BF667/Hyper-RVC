@@ -16,6 +16,10 @@ from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import requests
 
+from main.tools.logger import get_logger
+
+logger = get_logger(__name__)
+
 # Ensure the project root is on sys.path when run directly
 _now_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _now_dir not in sys.path:

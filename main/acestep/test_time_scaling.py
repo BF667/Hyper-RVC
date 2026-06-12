@@ -345,17 +345,20 @@ def calculate_pmi_score_per_condition(
     if not audio_codes or not audio_codes.strip():
         return {}, 0.0, "❌ No audio codes provided"
 
+    if metadata is None:
+        metadata = {}
+
     if "caption" not in metadata:
         metadata['caption'] = caption
 
     formatted_prompt = llm_handler.build_formatted_prompt_for_understanding(audio_codes=audio_codes, is_negative_prompt=False)
     prompt_uncond = llm_handler.build_formatted_prompt_for_understanding(audio_codes="NO USER INPUT", is_negative_prompt=False)
+    metadata_recall_keys = ['bpm', 'duration', 'genres', 'keyscale', 'language', 'timesignature']
+
     try:
         # 1. Calculate Recall for Metadata Fields
         if metadata and isinstance(metadata, dict):
             scores = {}
-            # Define which fields use which metric
-            metadata_recall_keys = ['bpm', 'duration', 'genres', 'keyscale', 'language', 'timesignature']
             metadata_pmi_keys = ['caption']
             for key in metadata_recall_keys:
                 if key in metadata and metadata[key] is not None:

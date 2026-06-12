@@ -38,13 +38,13 @@ try:
     from .gradio_ui import create_gradio_interface
 except ImportError:
     # When executed as a script: `python acestep/acestep_v15_pipeline.py`
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    from acestep.handler import AceStepHandler
-    from acestep.llm_inference import LLMHandler
-    from acestep.dataset_handler import DatasetHandler
-    from acestep.gradio_ui import create_gradio_interface
+    _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from main.acestep.handler import AceStepHandler
+    from main.acestep.llm_inference import LLMHandler
+    from main.acestep.dataset_handler import DatasetHandler
+    from main.acestep.gradio_ui import create_gradio_interface
 
 
 def create_demo(init_params=None, language='en'):

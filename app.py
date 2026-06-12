@@ -25,8 +25,10 @@ MAX_PORT_ATTEMPTS = 10
 
 # ─── Heavy imports ──────────────────────────────────────────────────────────
 import torch
-import regex as re
+import regex
 
+# Import gradio Server compatibility layer (gradio.Server doesn't exist in released versions)
+import gradio_server_compat  # noqa: F401 – patches gradio.Server
 from gradio import Server
 from gradio.data_classes import FileData
 from fastapi.responses import HTMLResponse
@@ -143,9 +145,9 @@ def _get_speakers_id(model_path):
 
 def _format_title(title):
     formatted = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("utf-8")
-    formatted = re.sub(r"[\u2500-\u257F]+", "", formatted)
-    formatted = re.sub(r"[^\w\s.-]", "", formatted)
-    formatted = re.sub(r"\s+", "_", formatted)
+    formatted = regex.sub(r"[\u2500-\u257F]+", "", formatted)
+    formatted = regex.sub(r"[^\w\s.-]", "", formatted)
+    formatted = regex.sub(r"\s+", "_", formatted)
     return formatted
 
 
@@ -361,7 +363,7 @@ def api_upload_model_file(file_data: FileData):
         else:
             model_name = fmt_title(file_name.split(".index")[0])
 
-        model_name = re.sub(r"\d+[se]", "", model_name)
+        model_name = regex.sub(r"\d+[se]", "", model_name)
         if "__" in model_name:
             model_name = model_name.replace("__", "")
 

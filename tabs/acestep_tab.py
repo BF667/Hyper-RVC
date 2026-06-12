@@ -434,15 +434,16 @@ def acestep_tab():
             # Simple mode args: query, lang, duration, steps, seed, batch, format
             query = args[0]
             lang = args[1]
-            # Skip advanced settings indices, pull from advanced section
-            steps = args[8]
-            seed = args[10]
-            batch = args[11]
-            fmt = args[13]
+            # Advanced settings indices (shared across all modes)
+            duration = args[11]
+            steps = args[14]
+            seed = args[16]
+            batch = args[17]
+            fmt = args[20]
             return run_acestep_simple_mode(
                 query=query,
                 vocal_language=lang,
-                duration=30,
+                duration=int(duration) if duration else 30,
                 inference_steps=steps,
                 seed=int(seed),
                 batch_size=int(batch),

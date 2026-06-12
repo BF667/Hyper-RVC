@@ -100,7 +100,7 @@ class VoiceConverter:
         f0_file: str,
         f0_method: str,
         index_rate: float,
-        volume_envelope: int,
+        volume_envelope: float,
         protect: float,
         hop_length: int,
         split_audio: bool,
@@ -141,7 +141,7 @@ class VoiceConverter:
                 .replace("trained", "added")
             )
 
-            if self.tgt_sr != resample_sr >= 16000:
+            if resample_sr >= 16000 and self.tgt_sr != resample_sr:
                 self.tgt_sr = resample_sr
 
             if split_audio:
@@ -246,7 +246,7 @@ class VoiceConverter:
         f0_file: str,
         f0_method: str,
         index_rate: float,
-        volume_envelope: int,
+        volume_envelope: float,
         protect: float,
         hop_length: int,
         split_audio: bool,
@@ -304,7 +304,7 @@ class VoiceConverter:
                 if audio_max > 1:
                     audio /= audio_max
 
-                if self.tgt_sr != resample_sr >= 16000:
+                if resample_sr >= 16000 and self.tgt_sr != resample_sr:
                     self.tgt_sr = resample_sr
 
                 if split_audio:
@@ -416,16 +416,11 @@ class VoiceConverter:
         """
         Cleans up the model and releases resources.
         """
-        if self.hubert_model is not None:
-            del self.net_g, self.n_spk, self.vc, self.hubert_model, self.tgt_sr
-            self.hubert_model = self.net_g = self.n_spk = self.vc = self.tgt_sr = None
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-        del self.net_g, self.cpt
+        for attr in ("net_g", "n_spk", "vc", "hubert_model", "tgt_sr", "cpt"):
+            if hasattr(self, attr):
+                delattr(self, attr)
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        self.cpt = None
 
     def load_model(self, weight_root):
         """

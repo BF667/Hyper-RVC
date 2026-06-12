@@ -15,6 +15,10 @@ class RMSNorm(nn.Module):
 class MambaModule(nn.Module):
     def __init__(self, d_model, d_state, d_conv, d_expand):
         super().__init__()
+        try:
+            from mamba_ssm.modules.mamba_simple import Mamba
+        except ImportError:
+            raise ImportError("mamba_ssm is required for MambaModule. Install it with: pip install mamba-ssm")
         self.norm = RMSNorm(dim=d_model)
         self.mamba = Mamba(
                 d_model=d_model, 

@@ -48,6 +48,7 @@ def whisper_process(
     """
     from main.whisper.diarization.whisper import load_model
 
+    segments = None
     try:
         segments = load_model(
             model_size,
@@ -62,5 +63,6 @@ def whisper_process(
     except Exception as e:
         out_queue.put(e)
     finally:
-        del segments
+        if segments is not None:
+            del segments
         gc.collect()

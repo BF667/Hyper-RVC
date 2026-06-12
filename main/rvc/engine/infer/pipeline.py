@@ -29,7 +29,7 @@ bh, ah = signal.butter(
     N=FILTER_ORDER, Wn=CUTOFF_FREQUENCY, btype="high", fs=SAMPLE_RATE
 )
 
-input_audio_path2wav = {}
+# input_audio_path2wav was unused and has been removed
 
 
 class AudioProcessor:
@@ -257,9 +257,11 @@ class Pipeline:
             p_len: Desired length of the F0 output.
             hop_length: Hop length for F0 estimation methods.
         """
-        methods_str = re.search("hybrid\[(.+)\]", methods_str)
-        if methods_str:
-            methods = [method.strip() for method in methods_str.group(1).split("+")]
+        match = re.search(r"hybrid\[(.+)\]", methods_str)
+        if match:
+            methods = [method.strip() for method in match.group(1).split("+")]
+        else:
+            raise ValueError(f"Invalid hybrid method string: {methods_str}")
         f0_computation_stack = []
         print(f"Calculating f0 pitch estimations for methods {str(methods)}")
         x = x.astype("float32")
@@ -267,10 +269,12 @@ class Pipeline:
         for method in methods:
             f0 = None
             if method == "crepe":
-                f0 = self.get_f0_crepe_computation(
+                f0 = self.get_f0_crepe(
                     x, f0_min, f0_max, p_len, int(hop_length)
                 )
             elif method == "rmvpe":
+                from main.rvc.engine.lib.predictors.RMVPE import RMVPE0Predictor
+                from main.tools.variables import get_rmvpe_model_path
                 self.model_rmvpe = RMVPE0Predictor(
                     get_rmvpe_model_path(),
                     is_half=self.is_half,
@@ -279,6 +283,8 @@ class Pipeline:
                 f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
                 f0 = f0[1:]
             elif method == "fcpe":
+                from main.rvc.engine.lib.predictors.FCPE import FCPEF0Predictor
+                from main.tools.variables import get_fcpe_model_path
                 self.model_fcpe = FCPEF0Predictor(
                     get_fcpe_model_path(),
                     f0_min=int(f0_min),
@@ -339,8 +345,8 @@ class Pipeline:
                 filter_radius=filter_radius,
             )
 
-        if f0_autotune == "True":
-            f0 = Autotune.autotune_f0(self, f0)
+        if f0_autotune:
+            f0 = self.autotune.autotune_f0(f0)
 
         f0 *= pow(2, pitch / 12)
         tf0 = self.sample_rate // self.window
@@ -412,11 +418,11 @@ class Pipeline:
             feats = (
                 model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
             )
-        if protect < 0.5 and pitch != None and pitchf != None:
+        if protect < 0.5 and pitch is not None and pitchf is not None:
             feats0 = feats.clone()
         if (
-            isinstance(index, type(None)) == False
-            and isinstance(big_npy, type(None)) == False
+            index is not None
+            and big_npy is not None
             and index_rate != 0
         ):
             npy = feats[0].cpu().numpy()
@@ -436,18 +442,18 @@ class Pipeline:
             )
 
         feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
-        if protect < 0.5 and pitch != None and pitchf != None:
+        if protect < 0.5 and pitch is not None and pitchf is not None:
             feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
                 0, 2, 1
             )
         p_len = audio0.shape[0] // self.window
         if feats.shape[1] < p_len:
             p_len = feats.shape[1]
-            if pitch != None and pitchf != None:
+            if pitch is not None and pitchf is not None:
                 pitch = pitch[:, :p_len]
                 pitchf = pitchf[:, :p_len]
 
-        if protect < 0.5 and pitch != None and pitchf != None:
+        if protect < 0.5 and pitch is not None and pitchf is not None:
             pitchff = pitchf.clone()
             pitchff[pitchf > 0] = 1
             pitchff[pitchf < 1] = protect
@@ -456,7 +462,7 @@ class Pipeline:
             feats = feats.to(feats0.dtype)
         p_len = torch.tensor([p_len], device=self.device).long()
         with torch.no_grad():
-            if pitch != None and pitchf != None:
+            if pitch is not None and pitchf is not None:
                 audio1 = (
                     (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0])
                     .data.cpu()
@@ -518,7 +524,7 @@ class Pipeline:
             f0_autotune: Whether to apply autotune to the F0 contour.
             f0_file: Path to a file containing an F0 contour to use.
         """
-        if file_index != "" and os.path.exists(file_index) == True and index_rate != 0:
+        if file_index != "" and os.path.exists(file_index) and index_rate != 0:
             try:
                 index = faiss.read_index(file_index)
                 big_npy = index.reconstruct_n(0, index.ntotal)
@@ -549,7 +555,7 @@ class Pipeline:
         audio_pad = np.pad(audio, (self.t_pad, self.t_pad), mode="reflect")
         p_len = audio_pad.shape[0] // self.window
         inp_f0 = None
-        if hasattr(f0_file, "name") == True:
+        if hasattr(f0_file, "name"):
             try:
                 with open(f0_file.name, "r") as f:
                     lines = f.read().strip("\n").split("\n")
@@ -560,7 +566,7 @@ class Pipeline:
             except Exception as error:
                 print(f"An error occurred reading the F0 file: {error}")
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
-        if pitch_guidance == True:
+        if pitch_guidance:
             pitch, pitchf = self.get_f0(
                 input_audio_path,
                 audio_pad,
@@ -580,7 +586,7 @@ class Pipeline:
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         for t in opt_ts:
             t = t // self.window * self.window
-            if pitch_guidance == True:
+            if pitch_guidance:
                 audio_opt.append(
                     self.voice_conversion(
                         model,
@@ -613,7 +619,7 @@ class Pipeline:
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
-        if pitch_guidance == True:
+        if pitch_guidance:
             audio_opt.append(
                 self.voice_conversion(
                     model,
@@ -659,7 +665,10 @@ class Pipeline:
         if audio_max > 1:
             max_int16 /= audio_max
         audio_opt = (audio_opt * max_int16).astype("int16")
-        del pitch, pitchf, sid
+        if pitch_guidance:
+            del pitch, pitchf, sid
+        else:
+            del sid
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         return audio_opt

@@ -1708,7 +1708,8 @@ class DecodingTask:
         if self.options.fp16: mel = mel.half()
 
         audio_features = mel if mel.shape[-2:] == (self.model.dims.n_audio_ctx, self.model.dims.n_audio_state) else self.model.encoder(mel)
-        if audio_features.dtype != (torch.float16 if self.options.fp16 else torch.float32): return TypeError
+        if audio_features.dtype != (torch.float16 if self.options.fp16 else torch.float32):
+            raise TypeError(f"Expected dtype {torch.float16 if self.options.fp16 else torch.float32}, got {audio_features.dtype}")
 
         return audio_features
 

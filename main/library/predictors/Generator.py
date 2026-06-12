@@ -26,7 +26,8 @@ import numpy as np
 from scipy.signal import medfilt
 from librosa import yin, pyin, piptrack
 
-sys.path.append(os.getcwd())
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 from main.library.predictors.CREPE.filter import mean, median
 from main.library.predictors.WORLD.SWIPE import swipe, stonemask

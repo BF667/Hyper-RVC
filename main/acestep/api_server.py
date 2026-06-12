@@ -40,21 +40,25 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
-from acestep.handler import AceStepHandler
-from acestep.llm_inference import LLMHandler
-from acestep.constants import (
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+from main.acestep.handler import AceStepHandler
+from main.acestep.llm_inference import LLMHandler
+from main.acestep.constants import (
     DEFAULT_DIT_INSTRUCTION,
     DEFAULT_LM_INSTRUCTION,
     TASK_INSTRUCTIONS,
 )
-from acestep.inference import (
+from main.acestep.inference import (
     GenerationParams,
     GenerationConfig,
     generate_music,
     create_sample,
     format_sample,
 )
-from acestep.gradio_ui.events.results_handlers import _build_generation_info
+from main.acestep.gradio_ui.events.results_handlers import _build_generation_info
 
 
 # =============================================================================
@@ -640,7 +644,7 @@ def create_app() -> FastAPI:
 
         # Initialize local cache
         try:
-            from acestep.local_cache import get_local_cache
+            from main.acestep.local_cache import get_local_cache
             local_cache_dir = os.path.join(cache_root, "local_redis")
             app.state.local_cache = get_local_cache(local_cache_dir)
         except ImportError:

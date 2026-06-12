@@ -136,18 +136,6 @@ def get_decoder(config, c):
             classes=c,
             **decoder_options,
         )
-    elif config.model.decoder_type == 'pspnet':
-        try:
-            decoder_options = dict(config.decoder_pspnet)
-        except:
-            pass
-        decoder = smp.PSPNet(
-            encoder_name=config.model.encoder_name,
-            encoder_weights="imagenet",
-            in_channels=c,
-            classes=c,
-            **decoder_options,
-        )
     elif config.model.decoder_type == 'pan':
         try:
             decoder_options = dict(config.decoder_pan)

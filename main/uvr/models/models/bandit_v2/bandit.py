@@ -190,14 +190,16 @@ class BaseBandit(BaseEndToEndModule):
 
     def forward(self, batch, mode="train"):
         # Model takes mono as input we give stereo, so we do process of each channel independently
-        init_shape = batch.shape
         if not isinstance(batch, dict):
+            init_shape = batch.shape
             mono = batch.view(-1, 1, batch.shape[-1])
             batch = {
                 "mixture": {
                     "audio": mono
                 }
             }
+        else:
+            init_shape = batch["mixture"]["audio"].shape
 
         with torch.no_grad():
             mixture = batch["mixture"]["audio"]

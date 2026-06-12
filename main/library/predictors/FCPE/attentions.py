@@ -353,6 +353,7 @@ class FastAttention(nn.Module):
         self.kernel_fn = kernel_fn
         self.no_projection = no_projection
         self.causal = causal
+        self.causal_linear_fn = linear_attention
 
     @torch.no_grad()
     def redraw_projection_matrix(self):

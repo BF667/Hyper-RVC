@@ -244,6 +244,7 @@ class SCNet(nn.Module):
         x = torch.istft(x, **self.stft_kwargs, window=stft_window, return_complex=False)
         x = rearrange(x, '(b n c) t -> b n c t', c=c, n=self.n_sources)
 
-        x = x[..., :-stft_pad] 
+        if stft_pad > 0:
+            x = x[..., :-stft_pad]
 
         return x

@@ -64,15 +64,25 @@ MetricsType = Dict[str, torch.Tensor]
 
 
 def get_optimizer_class(name: str) -> Type[optim.Optimizer]:
-
     if name == "DeepSpeedCPUAdam":
-        return DeepSpeedCPUAdam
+        try:
+            from deepspeed.ops.adam import DeepSpeedCPUAdam
+            return DeepSpeedCPUAdam
+        except ImportError:
+            raise ImportError("DeepSpeedCPUAdam not available. Install deepspeed.")
 
-    for module in [optim, gooptim]:
+    extra_modules = []
+    try:
+        from geoopt import optim as gooptim
+        extra_modules.append(gooptim)
+    except ImportError:
+        pass
+
+    for module in [optim] + extra_modules:
         if name in module.__dict__:
             return module.__dict__[name]
 
-    raise NameError
+    raise ValueError(f"Optimizer '{name}' not found.")
 
 
 def parse_optimizer_config(

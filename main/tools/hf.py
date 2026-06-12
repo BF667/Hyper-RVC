@@ -4,7 +4,7 @@ import requests
 
 try:
     import wget
-except:
+except ImportError:
     wget = None
 
 def HF_download_file(url, output_path=None):
@@ -15,7 +15,7 @@ def HF_download_file(url, output_path=None):
         os.path.join(output_path, os.path.basename(url)) if os.path.isdir(output_path) else output_path
     )
 
-    if wget != None: 
+    if wget is not None: 
         wget.download(
             url, 
             out=output_path
@@ -40,6 +40,6 @@ def HF_download_file(url, output_path=None):
                     f.write(chunk)
 
             progress_bar.close()
-        else: raise ValueError(response.status_code)
+        else: raise RuntimeError(f"HuggingFace download failed with HTTP status {response.status_code} for URL: {url}")
 
     return output_path

@@ -13,19 +13,19 @@ def Mediafire_Download(url, output=None, filename=None):
     sess.headers.update({"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)"})
 
     try:
-        bs4 = BeautifulSoup(
+        download_url = BeautifulSoup(
             sess.get(url).content, 
             "html.parser"
         ).find(id="downloadButton").get("href")
 
         with requests.get(
-            bs4, 
+            download_url, 
             stream=True
         ) as r:
             r.raise_for_status()
 
             with open(output_file, "wb") as f:
-                total_length = int(r.headers.get('content-length'))
+                total_length = int(r.headers.get('content-length', 0)) or 1
                 download_progress = 0
 
                 for chunk in r.iter_content(chunk_size=1024):

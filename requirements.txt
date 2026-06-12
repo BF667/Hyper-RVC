@@ -14,6 +14,9 @@ tqdm
 wget
 faiss-cpu>=1.7.3
 pedalboard
+regex>=2023.0
+pyyaml>=6.0
+uvicorn>=0.20.0
 
 # Audio processing
 pydub>=0.25.1; python_version < "3.13"
@@ -23,14 +26,13 @@ librosa>=0.10.1
 ffmpeg-python==0.2.0
 yt-dlp
 audio-separator[gpu]
-pedalboard
 samplerate
 soxr
 
 # Visualization and UI
 matplotlib>=3.8.0
 matplotlib-inline>=0.1.7
-gradio
+gradio>=5.0.0
 
 
 

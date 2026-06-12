@@ -304,6 +304,87 @@ class OverlappingMaskEstimationModule(MaskEstimationModuleBase):
         return masks
 
 
+class MultAddMaskEstimationModule(OverlappingMaskEstimationModule):
+    def __init__(
+            self,
+            band_specs: List[Tuple[float, float]],
+            freq_weights: List[torch.Tensor],
+            n_freq: int,
+            emb_dim: int,
+            mlp_dim: int,
+            in_channel: int,
+            hidden_activation: str = "Tanh",
+            hidden_activation_kwargs: Dict = None,
+            complex_mask: bool = True,
+            use_freq_weights: bool = True,
+            cond_dim: int = 0,
+    ) -> None:
+        super().__init__(
+                in_channel=in_channel,
+                band_specs=band_specs,
+                freq_weights=freq_weights,
+                n_freq=n_freq,
+                emb_dim=emb_dim,
+                mlp_dim=mlp_dim,
+                cond_dim=cond_dim,
+                hidden_activation=hidden_activation,
+                hidden_activation_kwargs=hidden_activation_kwargs,
+                complex_mask=complex_mask,
+                norm_mlp_cls=MultAddNormMLP,
+                use_freq_weights=use_freq_weights,
+        )
+
+    def forward(self, q, cond=None):
+        # q = (batch, n_bands, n_time, emb_dim)
+
+        batch, n_bands, n_time, emb_dim = q.shape
+
+        if cond is not None:
+            if cond.ndim == 2:
+                cond = cond[:, None, None, :].expand(-1, n_bands, n_time, -1)
+            elif cond.ndim == 3:
+                assert cond.shape[1] == n_time
+            else:
+                raise ValueError(f"Invalid cond shape: {cond.shape}")
+
+            q = torch.cat([q, cond], dim=-1)
+        elif self.cond_dim > 0:
+            cond = torch.ones(
+                    (batch, n_bands, n_time, self.cond_dim),
+                    device=q.device,
+                    dtype=q.dtype,
+            )
+            q = torch.cat([q, cond], dim=-1)
+
+        mask_list = self.compute_masks(q)
+
+        masks_m = torch.zeros(
+                (batch, self.in_channel, self.n_freq, n_time),
+                device=q.device,
+                dtype=mask_list[0][0].dtype,
+        )
+
+        masks_a = torch.zeros(
+                (batch, self.in_channel, self.n_freq, n_time),
+                device=q.device,
+                dtype=mask_list[0][0].dtype,
+        )
+
+        for im, (mm, am) in enumerate(mask_list):
+            fstart, fend = self.band_specs[im]
+            if self.use_freq_weights:
+                fw = self.get_buffer(f"freq_weights/{im}")[:, None]
+                mm = mm * fw
+                am = am * fw
+            masks_m[:, :, fstart:fend, :] += mm
+            masks_a[:, :, fstart:fend, :] += am
+
+        # Stack along last dim: (batch, in_channel, n_freq, n_time, 2)
+        masks = torch.stack([masks_m, masks_a], dim=-1)
+
+        return masks
+
+
 class MaskEstimationModule(OverlappingMaskEstimationModule):
     def __init__(
             self,
